@@ -1,0 +1,4 @@
+(
+  title: "Mistery",
+  dimensions: Some((800, 500)),
+)

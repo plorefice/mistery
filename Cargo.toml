@@ -1,0 +1,19 @@
+[package]
+name = "mistery"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[dependencies]
+amethyst = "0.15.0"
+serde = "1.0.105"
+serde_derive = "1.0.105"
+
+[features]
+default = ["metal"]
+empty = ["amethyst/empty"]
+metal = ["amethyst/metal"]
+vulkan = ["amethyst/vulkan"]
+
+[profile.dev]
+debug = 0
