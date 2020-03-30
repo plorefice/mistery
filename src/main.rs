@@ -1,9 +1,11 @@
 mod components;
 mod game;
 mod input;
+mod renderer;
 mod systems;
 
-use game::GameState;
+use game::*;
+use renderer::*;
 use systems::*;
 
 use amethyst::{
@@ -15,6 +17,7 @@ use amethyst::{
         types::DefaultBackend,
         RenderingBundle,
     },
+    tiles::{MortonEncoder, RenderTiles2D},
     utils::application_root_dir,
 };
 use input::GameBindings;
@@ -50,7 +53,8 @@ fn main() -> amethyst::Result<()> {
                     RenderToWindow::from_config_path(display_config_path)?
                         .with_clear([0.0, 0.0, 0.0, 0.0]),
                 )
-                .with_plugin(RenderFlat2D::default()),
+                .with_plugin(RenderFlat2D::default())
+                .with_plugin(RenderTiles2D::<WorldTile, MortonEncoder>::default()),
         )?;
 
     let mut game = Application::new(assets_dir, GameState, game_data)?;

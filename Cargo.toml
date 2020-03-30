@@ -5,9 +5,10 @@ authors = []
 edition = "2018"
 
 [dependencies]
-amethyst = "0.15.0"
+amethyst = { version = "0.15.0", features = ["tiles"] }
 serde = "1.0.105"
 serde_derive = "1.0.105"
+rand = "0.7.3"
 
 [features]
 default = ["metal"]
