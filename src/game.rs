@@ -105,6 +105,7 @@ fn load_sprite_sheet(world: &mut World, png_path: &str, ron_path: &str) -> Handl
     )
 }
 
+#[derive(Clone, Copy)]
 pub enum TileKind {
     Wall,
     Floor,
