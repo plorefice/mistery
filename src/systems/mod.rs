@@ -10,36 +10,20 @@ use amethyst::{
 
 use std::collections::HashSet;
 
-#[derive(SystemDesc)]
-pub(crate) struct LeftWalker;
-
-impl<'s> System<'s> for LeftWalker {
-    type SystemData = (ReadStorage<'s, LeftMover>, WriteStorage<'s, Position>);
-
-    fn run(&mut self, (lefty, mut positions): Self::SystemData) {
-        for (_, Position(ref mut v)) in (&lefty, &mut positions).join() {
-            v[0] -= 1;
-            if v[0] < 0 {
-                v[0] = 79
-            };
-        }
-    }
-}
-
 #[derive(Default, SystemDesc)]
-pub(crate) struct InputMovementSystem {
+pub(crate) struct InputDispatcher {
     pressed: HashSet<ActionBinding>,
 }
 
-impl InputMovementSystem {
+impl InputDispatcher {
     fn was_pressed(&self, action: &ActionBinding) -> bool {
         self.pressed.contains(action)
     }
 }
 
-impl<'s> System<'s> for InputMovementSystem {
+impl<'s> System<'s> for InputDispatcher {
     type SystemData = (
-        WriteStorage<'s, InputMover>,
+        WriteStorage<'s, InputListener>,
         WriteStorage<'s, Position>,
         Read<'s, InputHandler<GameBindings>>,
         Read<'s, Time>,

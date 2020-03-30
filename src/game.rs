@@ -34,22 +34,7 @@ impl SimpleState for GameState {
             cp437_sheet_handle.clone(),
         );
 
-        world
-            .write_storage()
-            .insert(player, InputMover::default())
-            .unwrap();
-
-        for i in 0..10 {
-            let entity = spawn_entity(
-                world,
-                [i * 7, 20],
-                1,
-                Srgba::new(1.0, 0.0, 0.0, 1.0),
-                cp437_sheet_handle.clone(),
-            );
-
-            world.write_storage().insert(entity, LeftMover).unwrap();
-        }
+        world.write_storage().insert(player, InputListener).unwrap();
 
         initialize_camera(world, width, height);
     }

@@ -37,15 +37,12 @@ fn main() -> amethyst::Result<()> {
             InputBundle::<GameBindings>::new().with_bindings_from_file(bindings_config_path)?,
         )?
         // Custom systems
-        .with(LeftWalker, "left_walker", &[])
-        .with(
-            InputMovementSystem::default(),
-            "player_movement_system",
-            &[],
-        )
-        // Barrier before the position translator
+        .with(InputDispatcher::default(), "player_movement_system", &[])
+        // Every other subsystem must be done executing
+        // before we perform the Position -> Transform translation!
         .with_barrier()
         .with(PositionTranslator, "position_translator", &[])
+        // Rendering must be executed last, after the translator has done its job.
         .with_barrier()
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
