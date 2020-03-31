@@ -7,10 +7,11 @@ use crate::{
 };
 
 use amethyst::{
-    core::transform::Transform,
+    core::{transform::Transform, Hidden},
     derive::SystemDesc,
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
     input::InputHandler,
+    renderer::SpriteRender,
 };
 
 use std::collections::HashSet;
@@ -118,22 +119,40 @@ impl<'s> System<'s> for VisibilitySystem {
         Entities<'s>,
         ReadStorage<'s, PlayerTag>,
         ReadStorage<'s, Position>,
+        ReadStorage<'s, SpriteRender>,
         WriteStorage<'s, Viewshed>,
+        WriteStorage<'s, Hidden>,
         Write<'s, WorldMap>,
     );
 
-    fn run(&mut self, (entities, players, positions, mut viewsheds, mut map): Self::SystemData) {
-        for (e, &Position(pos), vs) in (&entities, &positions, &mut viewsheds).join() {
+    fn run(
+        &mut self,
+        (entities, players, positions, renders, mut viewsheds, mut hiddens, mut map): Self::SystemData,
+    ) {
+        for (player, &Position(pos), vs) in (&entities, &positions, &mut viewsheds).join() {
             if vs.dirty {
                 vs.visible = ShadowcastFoV::run(&*map, pos[0], pos[1], vs.range);
                 vs.dirty = false;
 
-                // If the entity is also a player, reveal the visible tiles
-                if players.contains(e) {
+                // If the entity is also a player, perform some additional actions
+                if players.contains(player) {
+                    // First, reveal the visible tiles on the map
                     map.clear_visibility();
                     for pt in &vs.visible {
                         map.reveal(pt[0], pt[1]);
                         map.set_visible(pt[0], pt[1], true);
+                    }
+
+                    // For renderable entities, hide those that are not in view
+                    // and show those that are visible
+                    for (e, _, &Position(other)) in (&entities, &renders, &positions).join() {
+                        if e != player {
+                            if vs.visible.contains(&other) {
+                                hiddens.remove(e);
+                            } else {
+                                hiddens.insert(e, Hidden).unwrap();
+                            }
+                        }
                     }
                 }
             }

@@ -2,7 +2,7 @@ use crate::{components::*, map::WorldMap, renderer::WorldTileMap};
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector3, transform::Transform},
+    core::{math::Vector3, transform::Transform, Hidden},
     prelude::*,
     renderer::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
@@ -107,6 +107,7 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
     for spawn_point in spawn_points {
         world
             .create_entity()
+            .with(Hidden) // initially monsters are not visible
             .with(Position(spawn_point))
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),

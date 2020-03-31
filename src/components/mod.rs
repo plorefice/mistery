@@ -1,6 +1,7 @@
 use crate::math::Point2;
 
 use amethyst::ecs::{Component, DenseVecStorage};
+use std::collections::HashSet;
 
 /// Tag component for the player's entity.
 #[derive(Default, Copy, Clone, Debug, Component)]
@@ -18,7 +19,7 @@ pub struct InputListener;
 pub struct Viewshed {
     pub range: u32,
     pub dirty: bool,
-    pub visible: Vec<Point2<u32>>,
+    pub visible: HashSet<Point2<u32>>,
 }
 
 impl Viewshed {
@@ -26,7 +27,7 @@ impl Viewshed {
         Viewshed {
             range,
             dirty: true,
-            visible: Vec::new(),
+            visible: HashSet::new(),
         }
     }
 }

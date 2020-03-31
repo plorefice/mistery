@@ -1,6 +1,7 @@
 use crate::math::{Point2, Rect};
 
 use rand::Rng;
+use std::collections::HashSet;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TileKind {
@@ -157,7 +158,7 @@ pub struct ShadowcastFoV<'a> {
     y: i32,
     radius: i32,
     map: &'a WorldMap,
-    visible: Vec<Point2<u32>>,
+    visible: HashSet<Point2<u32>>,
 }
 
 impl<'a> ShadowcastFoV<'a> {
@@ -169,13 +170,13 @@ impl<'a> ShadowcastFoV<'a> {
     ];
 
     /// Executes a run of the algorithm on the map for the specified circle.
-    pub fn run(map: &WorldMap, x: u32, y: u32, radius: u32) -> Vec<Point2<u32>> {
+    pub fn run(map: &WorldMap, x: u32, y: u32, radius: u32) -> HashSet<Point2<u32>> {
         let mut fov = ShadowcastFoV {
             map,
             x: x as i32,
             y: y as i32,
             radius: radius as i32,
-            visible: Vec::with_capacity((radius * radius * 4) as usize),
+            visible: HashSet::with_capacity((radius * radius * 4) as usize),
         };
 
         for i in 0..8 {
@@ -232,7 +233,7 @@ impl<'a> ShadowcastFoV<'a> {
 
                 let radius2 = self.radius * self.radius;
                 if (dx * dx + dy * dy) < radius2 {
-                    self.visible.push(Point2::new(ax as u32, ay as u32));
+                    self.visible.insert(Point2::new(ax as u32, ay as u32));
                 }
 
                 if blocked {
