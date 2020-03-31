@@ -1,4 +1,4 @@
-use amethyst::core::math::Point2;
+pub use amethyst::core::math::Point2;
 
 #[derive(Clone, Copy)]
 pub struct Rect {

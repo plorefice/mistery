@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct AxisBindings;
+pub struct AxisBindings;
 
 impl fmt::Display for AxisBindings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -12,7 +12,7 @@ impl fmt::Display for AxisBindings {
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum ActionBinding {
+pub enum ActionBinding {
     Up,
     Down,
     Left,
@@ -26,7 +26,7 @@ impl fmt::Display for ActionBinding {
 }
 
 #[derive(Default, Debug)]
-pub(crate) struct GameBindings;
+pub struct GameBindings;
 
 impl BindingTypes for GameBindings {
     type Axis = AxisBindings;

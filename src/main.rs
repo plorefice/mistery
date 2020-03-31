@@ -1,6 +1,7 @@
 mod components;
 mod game;
 mod input;
+mod map;
 mod math;
 mod renderer;
 mod systems;
@@ -42,6 +43,7 @@ fn main() -> amethyst::Result<()> {
         )?
         // Custom systems
         .with(InputDispatcher::default(), "player_movement_system", &[])
+        .with(VisibilitySystem, "visibility_system", &[])
         // Every other subsystem must be done executing
         // before we perform the Position -> Transform translation!
         .with_barrier()

@@ -1,18 +1,22 @@
-use crate::components::*;
-use crate::game::*;
-use crate::input::*;
+use crate::{
+    components::{InputListener, PlayerTag, Position, Viewshed},
+    game::TileDimension,
+    input::{ActionBinding, GameBindings},
+    map::{self, TileKind, WorldMap},
+    math::Point2,
+};
 
 use amethyst::{
-    core::{math::Vector2, transform::Transform},
+    core::transform::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
     input::InputHandler,
 };
 
 use std::collections::HashSet;
 
 #[derive(Default, SystemDesc)]
-pub(crate) struct InputDispatcher {
+pub struct InputDispatcher {
     pressed: HashSet<ActionBinding>,
 }
 
@@ -23,11 +27,8 @@ impl InputDispatcher {
 }
 
 impl InputDispatcher {
-    fn try_move(&self, pos: &mut Vector2<i32>, dx: i32, dy: i32, map: &Read<WorldMap>) {
-        let try_pos = Vector2::new(pos[0] + dx, pos[1] + dy);
-        if map.get((pos[0] + dx) as u32, (pos[1] + dy) as u32) != Some(TileKind::Wall) {
-            *pos = try_pos;
-        }
+    fn can_move_to(&self, to: Point2<u32>, map: &Read<WorldMap>) -> bool {
+        map.get(to[0], to[1]) != Some(TileKind::Wall)
     }
 }
 
@@ -50,16 +51,20 @@ impl<'s> System<'s> for InputDispatcher {
             .collect();
 
         for (_, Position(ref mut v)) in (&mut movers, &mut positions).join() {
-            let (mut dx, mut dy) = (0, 0);
+            let mut to = *v;
+
             for action in pressed.iter().filter(|a| !self.was_pressed(a)) {
                 match action {
-                    ActionBinding::Up => dy = 1,
-                    ActionBinding::Left => dx = -1,
-                    ActionBinding::Down => dy = -1,
-                    ActionBinding::Right => dx = 1,
+                    ActionBinding::Up => to[1] += 1,
+                    ActionBinding::Left => to[0] -= 1,
+                    ActionBinding::Down => to[1] -= 1,
+                    ActionBinding::Right => to[0] += 1,
                 }
             }
-            self.try_move(v, dx, dy, &map);
+
+            if self.can_move_to(to, &map) {
+                *v = to;
+            }
         }
 
         // Store currently active actions
@@ -74,7 +79,7 @@ impl<'s> System<'s> for InputDispatcher {
 /// This system takes this logical representation of position and turns it into
 /// something that the rendering system can actually work with.
 #[derive(Default, SystemDesc)]
-pub(crate) struct PositionTranslator;
+pub struct PositionTranslator;
 
 impl<'s> System<'s> for PositionTranslator {
     type SystemData = (
@@ -96,6 +101,32 @@ impl<'s> System<'s> for PositionTranslator {
                 let mut t = Transform::default();
                 t.set_translation_xyz(pos.0[0] as f32 * mul, pos.0[1] as f32 * mul, 0.0);
                 transforms.insert(e, t).expect("inserting transform failed");
+            }
+        }
+    }
+}
+
+#[derive(Default, SystemDesc)]
+pub struct VisibilitySystem;
+
+impl<'s> System<'s> for VisibilitySystem {
+    type SystemData = (
+        Entities<'s>,
+        ReadStorage<'s, PlayerTag>,
+        ReadStorage<'s, Position>,
+        WriteStorage<'s, Viewshed>,
+        Write<'s, WorldMap>,
+    );
+
+    fn run(&mut self, (entities, players, positions, mut viewsheds, mut map): Self::SystemData) {
+        for (e, &Position(pos), vs) in (&entities, &positions, &mut viewsheds).join() {
+            vs.visible = map::do_fov(&*map, pos[0], pos[1], vs.range);
+
+            // If the entity is also a player, reveal the visible tiles
+            if players.contains(e) {
+                for pt in &vs.visible {
+                    map.reveal(pt[0], pt[1])
+                }
             }
         }
     }
