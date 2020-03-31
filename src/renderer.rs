@@ -1,4 +1,7 @@
-use crate::map::{TileKind, WorldMap};
+use crate::{
+    map::{TileKind, WorldMap},
+    utils,
+};
 
 use amethyst::{
     core::math::Point3,
@@ -40,8 +43,8 @@ impl Tile for WorldTile {
     fn sprite(&self, coordinates: Point3<u32>, world: &World) -> Option<usize> {
         self.get(coordinates, world)
             .map(|WorldTileState { kind, .. }| match kind {
-                TileKind::Floor => 46,
-                TileKind::Wall => 35,
+                TileKind::Floor => utils::to_glyph('.'),
+                TileKind::Wall => utils::to_glyph('#'),
             })
     }
 

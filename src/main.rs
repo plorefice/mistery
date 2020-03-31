@@ -5,6 +5,7 @@ mod map;
 mod math;
 mod renderer;
 mod systems;
+mod utils;
 
 use game::*;
 use renderer::*;

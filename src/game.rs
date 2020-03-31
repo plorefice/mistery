@@ -1,4 +1,4 @@
-use crate::{components::*, map::WorldMap, renderer::WorldTileMap};
+use crate::{components::*, map::WorldMap, renderer::WorldTileMap, utils};
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
@@ -89,7 +89,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
         .with(Viewshed::new(8))
         .with(SpriteRender {
             sprite_sheet: sheet,
-            sprite_number: 64,
+            sprite_number: utils::to_glyph('@'),
         })
         .with(Tint(Srgba::new(0.7, 0.5, 0.0, 1.0)))
         .build();
@@ -111,7 +111,7 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .with(Position(spawn_point))
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
-                sprite_number: 103,
+                sprite_number: utils::to_glyph('g'),
             })
             .with(Tint(Srgba::new(1.0, 0.0, 0.0, 1.0)))
             .build();
