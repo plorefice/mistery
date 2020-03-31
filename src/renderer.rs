@@ -35,7 +35,7 @@ impl Tile for WorldTile {
 
     fn tint(&self, coordinates: Point3<u32>, world: &World) -> Srgba {
         match self.get(coordinates, world) {
-            TileKind::Floor => Srgba::new(0.5, 0.5, 0.5, 1.0),
+            TileKind::Floor => Srgba::new(0.2, 0.2, 0.2, 1.0),
             TileKind::Wall => Srgba::new(0.0, 0.17, 0.21, 1.0),
         }
     }
