@@ -29,34 +29,21 @@ impl SimpleState for GameState {
         let sprite_sheet =
             load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
 
-        // FIXME: compute this parameter somehow.
+        // FIXME: compute this parameter somehow
         world.insert(TileDimension(20.0));
 
-        // Create world map
-        initialize_map(world, 80, 50, sprite_sheet.clone());
+        // Initialize world map and camera
+        // IMPORTANT: map initialization *must* come before everything else
+        create_map(world, 80, 50, sprite_sheet.clone());
+        create_camera(world, screen_width, screen_height);
 
-        let pos = world.read_resource::<WorldMap>().rooms()[0].center();
-
-        // Create player entity
-        world
-            .create_entity()
-            .with(PlayerTag)
-            .with(InputListener)
-            .with(Position(pos))
-            .with(Viewshed::new(8))
-            .with(SpriteRender {
-                sprite_sheet,
-                sprite_number: 64,
-            })
-            .with(Tint(Srgba::new(0.7, 0.5, 0.0, 1.0)))
-            .build();
-
-        // Create camera
-        initialize_camera(world, screen_width, screen_height);
+        // Initialize all the game-related entities
+        spawn_player(world, sprite_sheet.clone());
+        spawn_monsters(world, sprite_sheet.clone());
     }
 }
 
-fn initialize_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSheet>) {
+fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSheet>) {
     let tile_dim = world.read_resource::<TileDimension>().0 as u32;
 
     let tilemap = WorldTileMap::new(
@@ -74,7 +61,7 @@ fn initialize_map(world: &mut World, width: u32, height: u32, sheet: Handle<Spri
         .build();
 }
 
-fn initialize_camera(world: &mut World, screen_width: f32, screen_height: f32) {
+fn create_camera(world: &mut World, screen_width: f32, screen_height: f32) {
     let tile_dim = world.read_resource::<TileDimension>().0;
 
     let mut position = Transform::default();
@@ -89,6 +76,45 @@ fn initialize_camera(world: &mut World, screen_width: f32, screen_height: f32) {
         .with(position)
         .with(Camera::standard_2d(screen_width, screen_height))
         .build();
+}
+
+fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
+    let pos = world.read_resource::<WorldMap>().rooms()[0].center();
+
+    world
+        .create_entity()
+        .with(PlayerTag)
+        .with(InputListener)
+        .with(Position(pos))
+        .with(Viewshed::new(8))
+        .with(SpriteRender {
+            sprite_sheet: sheet,
+            sprite_number: 64,
+        })
+        .with(Tint(Srgba::new(0.7, 0.5, 0.0, 1.0)))
+        .build();
+}
+
+fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
+    let spawn_points = world
+        .read_resource::<WorldMap>()
+        .rooms()
+        .iter()
+        .skip(1)
+        .map(|r| r.center())
+        .collect::<Vec<_>>();
+
+    for spawn_point in spawn_points {
+        world
+            .create_entity()
+            .with(Position(spawn_point))
+            .with(SpriteRender {
+                sprite_sheet: sheet.clone(),
+                sprite_number: 103,
+            })
+            .with(Tint(Srgba::new(1.0, 0.0, 0.0, 1.0)))
+            .build();
+    }
 }
 
 fn load_sprite_sheet(world: &mut World, png_path: &str, ron_path: &str) -> Handle<SpriteSheet> {
