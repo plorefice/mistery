@@ -15,6 +15,7 @@ pub struct WorldMap {
     rooms: Vec<Rect>,
     tiles: Vec<TileKind>,
     revealed: Vec<bool>,
+    visible: Vec<bool>,
 }
 
 impl WorldMap {
@@ -23,12 +24,15 @@ impl WorldMap {
         const MIN_SIZE: u32 = 7;
         const MAX_SIZE: u32 = 12;
 
+        let n = (width * height) as usize;
+
         let mut map = WorldMap {
             width,
             height,
             rooms: Vec::with_capacity(MAX_ROOMS),
-            tiles: vec![TileKind::Wall; (width * height) as usize],
-            revealed: vec![false; (width * height) as usize],
+            tiles: vec![TileKind::Wall; n],
+            revealed: vec![false; n],
+            visible: vec![false; n],
         };
 
         let mut rng = rand::thread_rng();
@@ -84,10 +88,28 @@ impl WorldMap {
         self.revealed.get(self.xy_to_idx(x, y)).cloned()
     }
 
-    /// Returns whether the tile at coordinates `(x, y)` has been revealed, if present.
+    /// Returns whether the tile at coordinates `(x, y)` is currently visible, if present.
+    pub fn is_visible(&self, x: u32, y: u32) -> Option<bool> {
+        self.visible.get(self.xy_to_idx(x, y)).cloned()
+    }
+
+    /// Marks the tile at coordinates `(x, y)` as revealed.
     pub fn reveal(&mut self, x: u32, y: u32) {
         let idx = self.xy_to_idx(x, y);
         self.revealed[idx] = true;
+    }
+
+    /// Changes the visibility of the tile at coordinates `(x, y)`.
+    pub fn set_visible(&mut self, x: u32, y: u32, visible: bool) {
+        let idx = self.xy_to_idx(x, y);
+        self.visible[idx] = visible;
+    }
+
+    /// Sets all tiles as not visible.
+    pub fn clear_visibility(&mut self) {
+        for viz in self.visible.iter_mut() {
+            *viz = false;
+        }
     }
 
     /// Returns the a reference to the rooms in this map.

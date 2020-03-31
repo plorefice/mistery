@@ -17,6 +17,7 @@ pub struct InputListener;
 #[derive(Component)]
 pub struct Viewshed {
     pub range: u32,
+    pub dirty: bool,
     pub visible: Vec<Point2<u32>>,
 }
 
@@ -24,6 +25,7 @@ impl Viewshed {
     pub fn new(range: u32) -> Viewshed {
         Viewshed {
             range,
+            dirty: true,
             visible: Vec::new(),
         }
     }

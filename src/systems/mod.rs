@@ -36,11 +36,12 @@ impl<'s> System<'s> for InputDispatcher {
     type SystemData = (
         WriteStorage<'s, InputListener>,
         WriteStorage<'s, Position>,
+        WriteStorage<'s, Viewshed>,
         Read<'s, InputHandler<GameBindings>>,
         Read<'s, WorldMap>,
     );
 
-    fn run(&mut self, (mut movers, mut positions, input, map): Self::SystemData) {
+    fn run(&mut self, (mut movers, mut positions, mut viewsheds, input, map): Self::SystemData) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
         let pressed: HashSet<_> = input
@@ -50,7 +51,9 @@ impl<'s> System<'s> for InputDispatcher {
             .filter(|a| input.action_is_down(a).unwrap_or_default())
             .collect();
 
-        for (_, Position(ref mut v)) in (&mut movers, &mut positions).join() {
+        for (_, Position(ref mut v), Viewshed { ref mut dirty, .. }) in
+            (&mut movers, &mut positions, &mut viewsheds).join()
+        {
             let mut to = *v;
 
             for action in pressed.iter().filter(|a| !self.was_pressed(a)) {
@@ -64,6 +67,7 @@ impl<'s> System<'s> for InputDispatcher {
 
             if self.can_move_to(to, &map) {
                 *v = to;
+                *dirty = true; // recompute viewshed on movement
             }
         }
 
@@ -120,12 +124,17 @@ impl<'s> System<'s> for VisibilitySystem {
 
     fn run(&mut self, (entities, players, positions, mut viewsheds, mut map): Self::SystemData) {
         for (e, &Position(pos), vs) in (&entities, &positions, &mut viewsheds).join() {
-            vs.visible = map::do_fov(&*map, pos[0], pos[1], vs.range);
+            if vs.dirty {
+                vs.visible = map::do_fov(&*map, pos[0], pos[1], vs.range);
+                vs.dirty = false;
 
-            // If the entity is also a player, reveal the visible tiles
-            if players.contains(e) {
-                for pt in &vs.visible {
-                    map.reveal(pt[0], pt[1])
+                // If the entity is also a player, reveal the visible tiles
+                if players.contains(e) {
+                    map.clear_visibility();
+                    for pt in &vs.visible {
+                        map.reveal(pt[0], pt[1]);
+                        map.set_visible(pt[0], pt[1], true);
+                    }
                 }
             }
         }
