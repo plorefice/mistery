@@ -83,7 +83,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
 
     world
         .create_entity()
-        .with(PlayerTag)
+        .with(Player)
         .with(InputListener)
         .with(Position(pos))
         .with(Viewshed::new(8))
@@ -107,13 +107,14 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
     for spawn_point in spawn_points {
         world
             .create_entity()
-            .with(Hidden) // initially monsters are not visible
+            .with(Monster)
             .with(Position(spawn_point))
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
                 sprite_number: utils::to_glyph('g'),
             })
             .with(Tint(Srgba::new(1.0, 0.0, 0.0, 1.0)))
+            .with(Hidden) // initially monsters are not visible
             .build();
     }
 }

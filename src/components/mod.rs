@@ -5,7 +5,11 @@ use std::collections::HashSet;
 
 /// Tag component for the player's entity.
 #[derive(Default, Copy, Clone, Debug, Component)]
-pub struct PlayerTag;
+pub struct Player;
+
+#[derive(Default, Copy, Clone, Debug, Component)]
+/// Tag component for a monster's entity.
+pub struct Monster;
 
 /// Logical position in the world map.
 #[derive(Copy, Clone, Debug, Component)]

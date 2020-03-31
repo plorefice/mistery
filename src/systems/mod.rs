@@ -1,5 +1,7 @@
+pub mod ai;
+
 use crate::{
-    components::{InputListener, PlayerTag, Position, Viewshed},
+    components::{InputListener, Player, Position, Viewshed},
     game::TileDimension,
     input::{ActionBinding, GameBindings},
     map::{ShadowcastFoV, TileKind, WorldMap},
@@ -117,7 +119,7 @@ pub struct VisibilitySystem;
 impl<'s> System<'s> for VisibilitySystem {
     type SystemData = (
         Entities<'s>,
-        ReadStorage<'s, PlayerTag>,
+        ReadStorage<'s, Player>,
         ReadStorage<'s, Position>,
         ReadStorage<'s, SpriteRender>,
         WriteStorage<'s, Viewshed>,

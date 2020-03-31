@@ -7,9 +7,10 @@ mod renderer;
 mod systems;
 mod utils;
 
-use game::*;
+use game::GameState;
+use input::GameBindings;
 use renderer::*;
-use systems::*;
+use systems::{ai::*, *};
 
 use amethyst::{
     core::transform::TransformBundle,
@@ -23,7 +24,6 @@ use amethyst::{
     tiles::{MortonEncoder, RenderTiles2D},
     utils::application_root_dir,
 };
-use input::GameBindings;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -45,6 +45,7 @@ fn main() -> amethyst::Result<()> {
         // Custom systems
         .with(InputDispatcher::default(), "player_movement_system", &[])
         .with(VisibilitySystem, "visibility_system", &[])
+        .with(MonsterAI, "monster_ai_system", &[])
         // Every other subsystem must be done executing
         // before we perform the Position -> Transform translation!
         .with_barrier()
