@@ -2,7 +2,7 @@ use crate::{
     components::{InputListener, PlayerTag, Position, Viewshed},
     game::TileDimension,
     input::{ActionBinding, GameBindings},
-    map::{self, TileKind, WorldMap},
+    map::{ShadowcastFoV, TileKind, WorldMap},
     math::Point2,
 };
 
@@ -125,7 +125,7 @@ impl<'s> System<'s> for VisibilitySystem {
     fn run(&mut self, (entities, players, positions, mut viewsheds, mut map): Self::SystemData) {
         for (e, &Position(pos), vs) in (&entities, &positions, &mut viewsheds).join() {
             if vs.dirty {
-                vs.visible = map::do_fov(&*map, pos[0], pos[1], vs.range);
+                vs.visible = ShadowcastFoV::run(&*map, pos[0], pos[1], vs.range);
                 vs.dirty = false;
 
                 // If the entity is also a player, reveal the visible tiles

@@ -145,118 +145,110 @@ impl WorldMap {
     }
 }
 
-fn cast_light(
-    map: &WorldMap,
-    x: u32,
-    y: u32,
-    radius: u32,
-    row: u32,
-    mut start_slope: f32,
-    end_slope: f32,
-    xx: i32,
-    xy: i32,
-    yx: i32,
-    yy: i32,
-) -> Vec<Point2<u32>> {
-    let mut visible = vec![];
+/// Implementation of the FoV algorithm using recursive shadowcasting.
+///
+/// The algorithm itself is described in great detail at [RogueBasin].
+/// This is based on the C++ implementation of the algorithm available [here].
+///
+/// [RogueBasin]: http://roguebasin.roguelikedevelopment.org/index.php?title=FOV_using_recursive_shadowcasting
+/// [here]: http://roguebasin.roguelikedevelopment.org/index.php?title=C%2B%2B_shadowcasting_implementation
+pub struct ShadowcastFoV<'a> {
+    x: i32,
+    y: i32,
+    radius: i32,
+    map: &'a WorldMap,
+    visible: Vec<Point2<u32>>,
+}
 
-    if start_slope < end_slope {
-        return visible;
+impl<'a> ShadowcastFoV<'a> {
+    const DIAGONALS_MULTIPLIES: [[i32; 8]; 4] = [
+        [1, 0, 0, -1, -1, 0, 0, 1],
+        [0, 1, -1, 0, 0, -1, 1, 0],
+        [0, 1, 1, 0, 0, -1, -1, 0],
+        [1, 0, 0, 1, -1, 0, 0, -1],
+    ];
+
+    /// Executes a run of the algorithm on the map for the specified circle.
+    pub fn run(map: &WorldMap, x: u32, y: u32, radius: u32) -> Vec<Point2<u32>> {
+        let mut fov = ShadowcastFoV {
+            map,
+            x: x as i32,
+            y: y as i32,
+            radius: radius as i32,
+            visible: Vec::with_capacity((radius * radius * 4) as usize),
+        };
+
+        for i in 0..8 {
+            fov.cast_light(
+                1,
+                1.0,
+                0.0,
+                (
+                    ShadowcastFoV::DIAGONALS_MULTIPLIES[0][i],
+                    ShadowcastFoV::DIAGONALS_MULTIPLIES[1][i],
+                    ShadowcastFoV::DIAGONALS_MULTIPLIES[2][i],
+                    ShadowcastFoV::DIAGONALS_MULTIPLIES[3][i],
+                ),
+            );
+        }
+
+        fov.visible
     }
 
-    let mut next_start_slope = start_slope;
-
-    for i in row..=radius {
+    fn cast_light(&mut self, row: i32, mut start: f32, end: f32, mul: (i32, i32, i32, i32)) {
         let mut blocked = false;
+        let mut next_start_slope = start;
 
-        for dx in -(i as i32)..=0 {
-            let dy = -(i as i32);
+        if start < end {
+            return;
+        }
 
-            let l_slope = (dx as f32 - 0.5) / (dy as f32 + 0.5);
-            let r_slope = (dx as f32 + 0.5) / (dy as f32 - 0.5);
-
-            if start_slope < r_slope {
-                continue;
-            } else if end_slope > l_slope {
+        for i in row..=self.radius {
+            if blocked {
                 break;
             }
+            for dx in -i..=0 {
+                let dy = -i;
+                let l_slope = (dx as f32 - 0.5) / (dy as f32 + 0.5);
+                let r_slope = (dx as f32 + 0.5) / (dy as f32 - 0.5);
 
-            let sax = dx * xx + dy * xy;
-            let say = dx * yx + dy * yy;
-            if (sax < 0 && sax.abs() as u32 > x) || (say < 0 && say.abs() as u32 > y) {
-                continue;
-            }
-
-            let ax = (x as i32 + sax) as u32;
-            let ay = (y as i32 + say) as u32;
-            if ax >= map.width() || ay >= map.height() {
-                continue;
-            }
-
-            let radius2 = radius * radius;
-            if (dx * dx + dy * dy) < radius2 as i32 {
-                visible.push(Point2::new(ax, ay));
-            }
-
-            if blocked {
-                if map.get(ax as u32, ay as u32) == Some(TileKind::Wall) {
-                    next_start_slope = r_slope;
+                if start < r_slope {
                     continue;
-                } else {
-                    blocked = false;
-                    start_slope = next_start_slope;
+                } else if end > l_slope {
+                    break;
                 }
-            } else if map.get(ax as u32, ay as u32) == Some(TileKind::Wall) {
-                blocked = true;
-                next_start_slope = r_slope;
-                cast_light(
-                    map,
-                    x,
-                    y,
-                    radius,
-                    i + 1,
-                    start_slope,
-                    l_slope,
-                    xx,
-                    xy,
-                    yx,
-                    yy,
-                );
+
+                let sax = dx * mul.0 + dy * mul.1;
+                let say = dx * mul.2 + dy * mul.3;
+                if (sax < 0 && sax.abs() > self.x) || (say < 0 && say.abs() > self.y) {
+                    continue;
+                }
+
+                let ax = self.x + sax;
+                let ay = self.y + say;
+                if ax >= self.map.width() as i32 || ay >= self.map.height() as i32 {
+                    continue;
+                }
+
+                let radius2 = self.radius * self.radius;
+                if (dx * dx + dy * dy) < radius2 {
+                    self.visible.push(Point2::new(ax as u32, ay as u32));
+                }
+
+                if blocked {
+                    if self.map.get(ax as u32, ay as u32) == Some(TileKind::Wall) {
+                        next_start_slope = r_slope;
+                        continue;
+                    } else {
+                        blocked = false;
+                        start = next_start_slope;
+                    }
+                } else if self.map.get(ax as u32, ay as u32) == Some(TileKind::Wall) {
+                    blocked = true;
+                    self.cast_light(i + 1, start, l_slope, mul);
+                    next_start_slope = r_slope;
+                }
             }
         }
-        if blocked {
-            break;
-        }
     }
-
-    visible
 }
-
-pub fn do_fov(map: &WorldMap, x: u32, y: u32, radius: u32) -> Vec<Point2<u32>> {
-    let mut visible = Vec::new();
-
-    for i in 0..8 {
-        visible.append(&mut cast_light(
-            map,
-            x,
-            y,
-            radius,
-            1,
-            1.0,
-            0.0,
-            MULTIPLIERS[0][i],
-            MULTIPLIERS[1][i],
-            MULTIPLIERS[2][i],
-            MULTIPLIERS[3][i],
-        ));
-    }
-
-    visible
-}
-
-const MULTIPLIERS: [[i32; 8]; 4] = [
-    [1, 0, 0, -1, -1, 0, 0, 1],
-    [0, 1, -1, 0, 0, -1, 1, 0],
-    [0, 1, 1, 0, 0, -1, -1, 0],
-    [1, 0, 0, 1, -1, 0, 0, -1],
-];
