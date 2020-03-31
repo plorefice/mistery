@@ -17,8 +17,11 @@ pub struct WorldTile;
 impl WorldTile {
     fn get(&self, coordinates: Point3<u32>, world: &World) -> TileKind {
         let map = world.read_resource::<WorldMap>();
-        let idx = coordinates[1] * map.width + coordinates[0];
-        map.tiles[idx as usize]
+
+        // `Tile` coordinates grow right-down, while everything else in Amethyst
+        // grows right-up, so the Y coordinate needs to be flipped before getting the tile.
+        map.get(coordinates[0], map.height() - coordinates[1] - 1)
+            .expect("TileMap and WorldMap do not agree on tiles")
     }
 }
 
@@ -33,7 +36,7 @@ impl Tile for WorldTile {
     fn tint(&self, coordinates: Point3<u32>, world: &World) -> Srgba {
         match self.get(coordinates, world) {
             TileKind::Floor => Srgba::new(0.5, 0.5, 0.5, 1.0),
-            TileKind::Wall => Srgba::new(0.0, 1.0, 0.0, 1.0),
+            TileKind::Wall => Srgba::new(0.0, 0.17, 0.21, 1.0),
         }
     }
 }

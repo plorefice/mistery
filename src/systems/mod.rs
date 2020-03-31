@@ -3,7 +3,7 @@ use crate::game::*;
 use crate::input::*;
 
 use amethyst::{
-    core::{transform::Transform, Time},
+    core::{math::Vector2, transform::Transform},
     derive::SystemDesc,
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
     input::InputHandler,
@@ -22,15 +22,24 @@ impl InputDispatcher {
     }
 }
 
+impl InputDispatcher {
+    fn try_move(&self, pos: &mut Vector2<i32>, dx: i32, dy: i32, map: &Read<WorldMap>) {
+        let try_pos = Vector2::new(pos[0] + dx, pos[1] + dy);
+        if map.get((pos[0] + dx) as u32, (pos[1] + dy) as u32) != Some(TileKind::Wall) {
+            *pos = try_pos;
+        }
+    }
+}
+
 impl<'s> System<'s> for InputDispatcher {
     type SystemData = (
         WriteStorage<'s, InputListener>,
         WriteStorage<'s, Position>,
         Read<'s, InputHandler<GameBindings>>,
-        Read<'s, Time>,
+        Read<'s, WorldMap>,
     );
 
-    fn run(&mut self, (mut movers, mut positions, input, _time): Self::SystemData) {
+    fn run(&mut self, (mut movers, mut positions, input, map): Self::SystemData) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
         let pressed: HashSet<_> = input
@@ -41,14 +50,16 @@ impl<'s> System<'s> for InputDispatcher {
             .collect();
 
         for (_, Position(ref mut v)) in (&mut movers, &mut positions).join() {
+            let (mut dx, mut dy) = (0, 0);
             for action in pressed.iter().filter(|a| !self.was_pressed(a)) {
                 match action {
-                    ActionBinding::Up => v[1] += 1,
-                    ActionBinding::Left => v[0] -= 1,
-                    ActionBinding::Down => v[1] -= 1,
-                    ActionBinding::Right => v[0] += 1,
+                    ActionBinding::Up => dy = 1,
+                    ActionBinding::Left => dx = -1,
+                    ActionBinding::Down => dy = -1,
+                    ActionBinding::Right => dx = 1,
                 }
             }
+            self.try_move(v, dx, dy, &map);
         }
 
         // Store currently active actions

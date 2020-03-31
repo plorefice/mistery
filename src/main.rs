@@ -1,6 +1,7 @@
 mod components;
 mod game;
 mod input;
+mod math;
 mod renderer;
 mod systems;
 
