@@ -112,10 +112,7 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
     }
 
     fn update(&mut self, data: &mut StateData<'_, GameData>) -> SimpleTrans {
-        let StateData { data, world } = data;
-
-        // Dispatch core systems
-        data.update(world);
+        let StateData { world, .. } = data;
 
         let run_state = *world.read_resource::<RunState>();
         match run_state {
