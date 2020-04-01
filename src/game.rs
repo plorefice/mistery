@@ -153,6 +153,9 @@ fn create_camera(world: &mut World, screen_width: f32, screen_height: f32) {
 fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
     let pos = world.read_resource::<WorldMap>().rooms()[0].center();
 
+    // Insert player position as resource
+    world.insert(pos);
+
     world
         .create_entity()
         .with(Player)
@@ -181,9 +184,14 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .create_entity()
             .with(Monster)
             .with(Position(spawn_point))
+            .with(Viewshed::new(8))
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
-                sprite_number: utils::to_glyph('g'),
+                sprite_number: if rand::random() {
+                    utils::to_glyph('g')
+                } else {
+                    utils::to_glyph('o')
+                },
             })
             .with(Tint(Srgba::new(1.0, 0.0, 0.0, 1.0)))
             .with(Hidden) // initially monsters are not visible

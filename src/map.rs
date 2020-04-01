@@ -1,4 +1,4 @@
-use crate::math::{Point2, Rect};
+use crate::math::{Point, Rect};
 
 use rand::Rng;
 use std::collections::HashSet;
@@ -79,30 +79,30 @@ impl WorldMap {
         self.height
     }
 
-    /// Returns the tile at coordinates `(x, y)`, if present.
-    pub fn get(&self, x: u32, y: u32) -> Option<TileKind> {
-        self.tiles.get(self.xy_to_idx(x, y)).cloned()
+    /// Returns the tile at the given point, if present.
+    pub fn get(&self, p: &Point) -> Option<TileKind> {
+        self.tiles.get(self.pt_to_idx(p)).cloned()
     }
 
-    /// Returns whether the tile at coordinates `(x, y)` has been revealed, if present.
-    pub fn is_revealed(&self, x: u32, y: u32) -> Option<bool> {
-        self.revealed.get(self.xy_to_idx(x, y)).cloned()
+    /// Returns whether the tile at the given point has been revealed, if present.
+    pub fn is_revealed(&self, p: &Point) -> Option<bool> {
+        self.revealed.get(self.pt_to_idx(p)).cloned()
     }
 
-    /// Returns whether the tile at coordinates `(x, y)` is currently visible, if present.
-    pub fn is_visible(&self, x: u32, y: u32) -> Option<bool> {
-        self.visible.get(self.xy_to_idx(x, y)).cloned()
+    /// Returns whether the tile at the given point is currently visible, if present.
+    pub fn is_visible(&self, p: &Point) -> Option<bool> {
+        self.visible.get(self.pt_to_idx(p)).cloned()
     }
 
-    /// Marks the tile at coordinates `(x, y)` as revealed.
-    pub fn reveal(&mut self, x: u32, y: u32) {
-        let idx = self.xy_to_idx(x, y);
+    /// Marks the tile at the given point as revealed.
+    pub fn reveal(&mut self, p: &Point) {
+        let idx = self.pt_to_idx(p);
         self.revealed[idx] = true;
     }
 
-    /// Changes the visibility of the tile at coordinates `(x, y)`.
-    pub fn set_visible(&mut self, x: u32, y: u32, visible: bool) {
-        let idx = self.xy_to_idx(x, y);
+    /// Changes the visibility of the tile at the given point.
+    pub fn set_visible(&mut self, p: &Point, visible: bool) {
+        let idx = self.pt_to_idx(p);
         self.visible[idx] = visible;
     }
 
@@ -120,6 +120,10 @@ impl WorldMap {
 
     fn xy_to_idx(&self, x: u32, y: u32) -> usize {
         (y * self.width + x) as usize
+    }
+
+    fn pt_to_idx(&self, p: &Point) -> usize {
+        (p.y() * self.width + p.x()) as usize
     }
 
     fn create_room(&mut self, room: &Rect) {
@@ -158,7 +162,7 @@ pub struct ShadowcastFoV<'a> {
     y: i32,
     radius: i32,
     map: &'a WorldMap,
-    visible: HashSet<Point2<u32>>,
+    visible: HashSet<Point>,
 }
 
 impl<'a> ShadowcastFoV<'a> {
@@ -170,7 +174,7 @@ impl<'a> ShadowcastFoV<'a> {
     ];
 
     /// Executes a run of the algorithm on the map for the specified circle.
-    pub fn run(map: &WorldMap, x: u32, y: u32, radius: u32) -> HashSet<Point2<u32>> {
+    pub fn run(map: &WorldMap, x: u32, y: u32, radius: u32) -> HashSet<Point> {
         let mut fov = ShadowcastFoV {
             map,
             x: x as i32,
@@ -233,18 +237,18 @@ impl<'a> ShadowcastFoV<'a> {
 
                 let radius2 = self.radius * self.radius;
                 if (dx * dx + dy * dy) < radius2 {
-                    self.visible.insert(Point2::new(ax as u32, ay as u32));
+                    self.visible.insert(Point::new(ax as u32, ay as u32));
                 }
 
                 if blocked {
-                    if self.map.get(ax as u32, ay as u32) == Some(TileKind::Wall) {
+                    if self.map.get(&(ax as u32, ay as u32).into()) == Some(TileKind::Wall) {
                         next_start_slope = r_slope;
                         continue;
                     } else {
                         blocked = false;
                         start = next_start_slope;
                     }
-                } else if self.map.get(ax as u32, ay as u32) == Some(TileKind::Wall) {
+                } else if self.map.get(&(ax as u32, ay as u32).into()) == Some(TileKind::Wall) {
                     blocked = true;
                     self.cast_light(i + 1, start, l_slope, mul);
                     next_start_slope = r_slope;

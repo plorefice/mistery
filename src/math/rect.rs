@@ -1,9 +1,9 @@
-pub use amethyst::core::math::Point2;
+use super::Point;
 
 #[derive(Clone, Copy)]
 pub struct Rect {
-    bl: Point2<u32>,
-    tr: Point2<u32>,
+    bl: Point,
+    tr: Point,
 }
 
 impl Rect {
@@ -17,22 +17,22 @@ impl Rect {
 
     /// Returns the coordinate of the rectangle's left side.
     pub fn left(&self) -> u32 {
-        self.bl[0]
+        self.bl.x()
     }
 
     /// Returns the coordinate of the rectangle's right side.
     pub fn right(&self) -> u32 {
-        self.tr[0]
+        self.tr.x()
     }
 
     /// Returns the coordinate of the rectangle's bottom side.
     pub fn bottom(&self) -> u32 {
-        self.bl[1]
+        self.bl.y()
     }
 
     /// Returns the coordinate of the rectangle's top side.
     pub fn top(&self) -> u32 {
-        self.tr[1]
+        self.tr.y()
     }
 
     /// Returns true if `self` intersects with `other`.
@@ -44,8 +44,8 @@ impl Rect {
     }
 
     /// Returns the center of this rectangle.
-    pub fn center(&self) -> Point2<u32> {
-        Point2::new(
+    pub fn center(&self) -> Point {
+        Point::new(
             (self.left() + self.right()) / 2,
             (self.bottom() + self.top()) / 2,
         )

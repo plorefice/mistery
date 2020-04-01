@@ -1,5 +1,6 @@
 use crate::{
     map::{TileKind, WorldMap},
+    math::Point,
     utils,
 };
 
@@ -28,14 +29,14 @@ impl WorldTile {
 
         // `Tile` coordinates grow right-down, while everything else in Amethyst
         // grows right-up, so the Y coordinate needs to be flipped before getting the tile.
-        let (x, y) = (coordinates[0], map.height() - coordinates[1] - 1);
+        let p = Point::new(coordinates[0], map.height() - coordinates[1] - 1);
 
-        map.is_revealed(x, y).and_then(|revealed| {
-            match (revealed, map.get(x, y), map.is_visible(x, y)) {
+        map.is_revealed(&p).and_then(
+            |revealed| match (revealed, map.get(&p), map.is_visible(&p)) {
                 (true, Some(kind), Some(visible)) => Some(WorldTileState { kind, visible }),
                 _ => None,
-            }
-        })
+            },
+        )
     }
 }
 

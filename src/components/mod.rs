@@ -1,4 +1,4 @@
-use crate::math::Point2;
+use crate::math::Point;
 
 use amethyst::ecs::{Component, DenseVecStorage};
 use std::collections::HashSet;
@@ -13,7 +13,7 @@ pub struct Monster;
 
 /// Logical position in the world map.
 #[derive(Copy, Clone, Debug, Component)]
-pub struct Position(pub Point2<u32>);
+pub struct Position(pub Point);
 
 /// Component for entities that need to respond to player input.
 #[derive(Default, Copy, Clone, Debug, Component)]
@@ -23,7 +23,7 @@ pub struct InputListener;
 pub struct Viewshed {
     pub range: u32,
     pub dirty: bool,
-    pub visible: HashSet<Point2<u32>>,
+    pub visible: HashSet<Point>,
 }
 
 impl Viewshed {

@@ -5,7 +5,7 @@ use crate::{
     game::{RunState, TileDimension},
     input::{ActionBinding, GameBindings},
     map::{ShadowcastFoV, TileKind, WorldMap},
-    math::Point2,
+    math::Point,
 };
 
 use amethyst::{
@@ -30,8 +30,8 @@ impl InputDispatcher {
 }
 
 impl InputDispatcher {
-    fn can_move_to(&self, to: Point2<u32>, map: &Read<WorldMap>) -> bool {
-        map.get(to[0], to[1]) != Some(TileKind::Wall)
+    fn can_move_to(&self, to: Point, map: &Read<WorldMap>) -> bool {
+        map.get(&to) != Some(TileKind::Wall)
     }
 }
 
@@ -43,11 +43,12 @@ impl<'s> System<'s> for InputDispatcher {
         Read<'s, InputHandler<GameBindings>>,
         Read<'s, WorldMap>,
         Write<'s, RunState>,
+        Write<'s, Point>,
     );
 
     fn run(
         &mut self,
-        (mut movers, mut positions, mut viewsheds, input, map, mut run_state): Self::SystemData,
+        (mut movers, mut positions, mut viewsheds, input, map, mut run_state, mut ppos): Self::SystemData,
     ) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
@@ -76,6 +77,7 @@ impl<'s> System<'s> for InputDispatcher {
                 *v = to;
                 *dirty = true; // recompute viewshed on movement
                 *run_state = RunState::Running; // un-pause game logic
+                *ppos = *v; // update global player position
             }
         }
 
@@ -146,8 +148,8 @@ impl<'s> System<'s> for VisibilitySystem {
                     // First, reveal the visible tiles on the map
                     map.clear_visibility();
                     for pt in &vs.visible {
-                        map.reveal(pt[0], pt[1]);
-                        map.set_visible(pt[0], pt[1], true);
+                        map.reveal(pt);
+                        map.set_visible(pt, true);
                     }
 
                     // For renderable entities, hide those that are not in view
