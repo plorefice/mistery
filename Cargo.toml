@@ -11,10 +11,11 @@ serde_derive = "1.0.105"
 rand = "0.7.3"
 
 [features]
-default = ["metal"]
+default = ["metal", "optimized"]
 empty = ["amethyst/empty"]
 metal = ["amethyst/metal"]
 vulkan = ["amethyst/vulkan"]
+optimized = ["amethyst/no-slow-safety-checks"]
 
 [profile.dev]
 debug = 0
