@@ -8,13 +8,14 @@ use crate::{
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector3, transform::Transform, ArcThreadPool, Hidden},
-    ecs::{Dispatcher, DispatcherBuilder},
+    core::{math::Vector3, transform::Transform, ArcThreadPool, Hidden, Time},
+    ecs::{Dispatcher, DispatcherBuilder, Entity},
     prelude::*,
     renderer::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
         SpriteSheetFormat, Texture,
     },
+    ui::{Anchor, TtfFormat, UiText, UiTransform},
     utils::fps_counter::FpsCounter,
     window::ScreenDimensions,
 };
@@ -39,6 +40,8 @@ impl Default for RunState {
 pub struct GameState<'a, 'b> {
     running_dispatcher: Option<Dispatcher<'a, 'b>>,
     paused_dispatcher: Option<Dispatcher<'a, 'b>>,
+
+    fps_display: Option<Entity>,
 }
 
 impl<'a, 'b> SimpleState for GameState<'a, 'b> {
@@ -87,6 +90,9 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         // Initialize all the game-related entities
         spawn_player(world, sprite_sheet.clone());
         spawn_monsters(world, sprite_sheet.clone());
+
+        // Utilities
+        self.create_fps_display(world);
     }
 
     fn handle_event(
@@ -131,7 +137,56 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
             }
         }
 
+        self.update_fps_display(world);
+
         Trans::None
+    }
+}
+
+impl<'a, 'b> GameState<'a, 'b> {
+    // Displays an FPS counter on the top left of the screen.
+    fn create_fps_display(&mut self, world: &mut World) {
+        let font = world.read_resource::<Loader>().load(
+            "font/square.ttf",
+            TtfFormat,
+            (),
+            &world.read_resource(),
+        );
+
+        let transform = UiTransform::new(
+            "fps".to_string(),
+            Anchor::TopLeft,
+            Anchor::TopLeft,
+            10.0,
+            -20.0,
+            0.5,
+            50.,
+            30.,
+        );
+
+        self.fps_display = Some(
+            world
+                .create_entity()
+                .with(transform)
+                .with(UiText::new(
+                    font,
+                    "--".to_string(),
+                    [0.8, 0.8, 0.0, 1.0],
+                    32.,
+                ))
+                .build(),
+        );
+    }
+
+    // Updates the FPS counter with the measured FPS.
+    fn update_fps_display(&mut self, world: &mut World) {
+        let mut ui_text = world.write_storage::<UiText>();
+        if let Some(display) = self.fps_display.and_then(|e| ui_text.get_mut(e)) {
+            if world.read_resource::<Time>().frame_number() % 20 == 0 {
+                let fps = world.read_resource::<FpsCounter>().sampled_fps();
+                display.text = format!("{:.0}", fps.round());
+            }
+        }
     }
 }
 
@@ -160,7 +215,7 @@ fn create_camera(world: &mut World, screen_width: f32, screen_height: f32) {
     position.set_translation_xyz(
         (screen_width - tile_dim) / 2.0,
         (screen_height - tile_dim) / 2.0,
-        1.0,
+        10.0,
     );
 
     world
