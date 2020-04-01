@@ -10,7 +10,6 @@ mod utils;
 use game::GameState;
 use input::GameBindings;
 use renderer::*;
-use systems::{ai::*, *};
 
 use amethyst::{
     core::transform::TransformBundle,
@@ -42,16 +41,6 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(
             InputBundle::<GameBindings>::new().with_bindings_from_file(bindings_config_path)?,
         )?
-        // Custom systems
-        .with(InputDispatcher::default(), "player_movement_system", &[])
-        .with(VisibilitySystem, "visibility_system", &[])
-        .with(MonsterAI, "monster_ai_system", &[])
-        // Every other subsystem must be done executing
-        // before we perform the Position -> Transform translation!
-        .with_barrier()
-        .with(PositionTranslator, "position_translator", &[])
-        // Rendering must be executed last, after the translator has done its job.
-        .with_barrier()
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(
@@ -62,7 +51,7 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderTiles2D::<WorldTile, MortonEncoder>::default()),
         )?;
 
-    let mut game = Application::new(assets_dir, GameState, game_data)?;
+    let mut game = Application::new(assets_dir, GameState::default(), game_data)?;
     game.run();
 
     Ok(())

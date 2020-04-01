@@ -1,8 +1,15 @@
-use crate::{components::*, map::WorldMap, renderer::WorldTileMap, utils};
+use crate::{
+    components::*,
+    map::WorldMap,
+    renderer::WorldTileMap,
+    systems::{ai::MonsterAI, InputDispatcher, PositionTranslator, VisibilitySystem},
+    utils,
+};
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector3, transform::Transform, Hidden},
+    core::{math::Vector3, transform::Transform, ArcThreadPool, Hidden},
+    ecs::{Dispatcher, DispatcherBuilder},
     prelude::*,
     renderer::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
@@ -15,11 +22,50 @@ use amethyst::{
 #[derive(Default)]
 pub struct TileDimension(pub f32);
 
-pub struct GameState;
+#[derive(Copy, Clone, PartialEq)]
+pub enum RunState {
+    Running,
+    Paused,
+}
 
-impl SimpleState for GameState {
-    fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
+impl Default for RunState {
+    fn default() -> Self {
+        RunState::Running
+    }
+}
+
+#[derive(Default)]
+pub struct GameState<'a, 'b> {
+    running_dispatcher: Option<Dispatcher<'a, 'b>>,
+    paused_dispatcher: Option<Dispatcher<'a, 'b>>,
+}
+
+impl<'a, 'b> SimpleState for GameState<'a, 'b> {
+    fn on_start(&mut self, data: StateData<'_, GameData>) {
         let StateData { world, .. } = data;
+
+        // Create system dispatcher for the running state
+        let mut running_dispatcher = DispatcherBuilder::new()
+            .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
+            .with(VisibilitySystem, "visibility_system", &[])
+            .with(MonsterAI, "monster_ai_system", &[])
+            .with_barrier()
+            .with(PositionTranslator, "position_translator", &[])
+            .build();
+
+        // Create system dispatcher for the paused state
+        let mut paused_dispatcher = DispatcherBuilder::new()
+            .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
+            .with(InputDispatcher::default(), "player_movement_system", &[])
+            .build();
+
+        // Attach the dispatchers to the world
+        running_dispatcher.setup(world);
+        paused_dispatcher.setup(world);
+
+        // Store the dispatchers in the state
+        self.running_dispatcher = Some(running_dispatcher);
+        self.paused_dispatcher = Some(paused_dispatcher);
 
         let (screen_width, screen_height) = {
             let dim = world.read_resource::<ScreenDimensions>();
@@ -29,7 +75,7 @@ impl SimpleState for GameState {
         let sprite_sheet =
             load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
 
-        // FIXME: compute this parameter somehow
+        // Create required resources
         world.insert(TileDimension(20.0));
 
         // Initialize world map and camera
@@ -40,6 +86,32 @@ impl SimpleState for GameState {
         // Initialize all the game-related entities
         spawn_player(world, sprite_sheet.clone());
         spawn_monsters(world, sprite_sheet.clone());
+    }
+
+    fn update(&mut self, data: &mut StateData<'_, GameData>) -> SimpleTrans {
+        let StateData { data, world } = data;
+
+        // Dispatch core systems
+        data.update(world);
+
+        let run_state = *world.read_resource::<RunState>();
+        match run_state {
+            RunState::Running => {
+                // Dispatch game logic systems
+                if let Some(ref mut d) = self.running_dispatcher {
+                    d.dispatch(&world);
+                    *world.write_resource() = RunState::Paused;
+                }
+            }
+            RunState::Paused => {
+                // Dispatch input handling systems
+                if let Some(ref mut d) = self.paused_dispatcher {
+                    d.dispatch(&world);
+                }
+            }
+        }
+
+        Trans::None
     }
 }
 

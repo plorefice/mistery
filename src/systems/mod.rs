@@ -2,7 +2,7 @@ pub mod ai;
 
 use crate::{
     components::{InputListener, Player, Position, Viewshed},
-    game::TileDimension,
+    game::{RunState, TileDimension},
     input::{ActionBinding, GameBindings},
     map::{ShadowcastFoV, TileKind, WorldMap},
     math::Point2,
@@ -42,9 +42,13 @@ impl<'s> System<'s> for InputDispatcher {
         WriteStorage<'s, Viewshed>,
         Read<'s, InputHandler<GameBindings>>,
         Read<'s, WorldMap>,
+        Write<'s, RunState>,
     );
 
-    fn run(&mut self, (mut movers, mut positions, mut viewsheds, input, map): Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut movers, mut positions, mut viewsheds, input, map, mut run_state): Self::SystemData,
+    ) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
         let pressed: HashSet<_> = input
@@ -68,9 +72,10 @@ impl<'s> System<'s> for InputDispatcher {
                 }
             }
 
-            if self.can_move_to(to, &map) {
+            if self.can_move_to(to, &map) && to != *v {
                 *v = to;
                 *dirty = true; // recompute viewshed on movement
+                *run_state = RunState::Running; // un-pause game logic
             }
         }
 
