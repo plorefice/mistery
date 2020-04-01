@@ -21,7 +21,7 @@ use amethyst::{
         RenderingBundle,
     },
     tiles::{MortonEncoder, RenderTiles2D},
-    utils::application_root_dir,
+    utils::{application_root_dir, fps_counter::FpsCounterBundle},
 };
 
 fn main() -> amethyst::Result<()> {
@@ -37,6 +37,7 @@ fn main() -> amethyst::Result<()> {
 
     let game_data = GameDataBuilder::default()
         // Built-in system bundles
+        .with_bundle(FpsCounterBundle::default())?
         .with_bundle(TransformBundle::new())?
         .with_bundle(
             InputBundle::<GameBindings>::new().with_bindings_from_file(bindings_config_path)?,
