@@ -241,6 +241,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
             sprite_sheet: sheet,
             sprite_number: utils::to_glyph('@'),
         })
+        .with(Name("Hero".to_string()))
         .with(Tint(Srgba::new(0.7, 0.5, 0.0, 1.0)))
         .build();
 }
@@ -254,7 +255,13 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
         .map(|r| r.center())
         .collect::<Vec<_>>();
 
-    for spawn_point in spawn_points {
+    for (i, spawn_point) in spawn_points.into_iter().enumerate() {
+        let (sprite, name) = if rand::random() {
+            (utils::to_glyph('g'), "Goblin")
+        } else {
+            (utils::to_glyph('o'), "Orc")
+        };
+
         world
             .create_entity()
             .with(Monster)
@@ -262,12 +269,9 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .with(Viewshed::new(8))
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
-                sprite_number: if rand::random() {
-                    utils::to_glyph('g')
-                } else {
-                    utils::to_glyph('o')
-                },
+                sprite_number: sprite,
             })
+            .with(Name(format!("{} #{}", name, i)))
             .with(Tint(Srgba::new(1.0, 0.0, 0.0, 1.0)))
             .with(Hidden) // initially monsters are not visible
             .build();

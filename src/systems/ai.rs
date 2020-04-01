@@ -1,5 +1,5 @@
 use crate::{
-    components::{Monster, Viewshed},
+    components::{Monster, Name, Viewshed},
     math::Point,
 };
 
@@ -15,13 +15,14 @@ impl<'s> System<'s> for MonsterAI {
     type SystemData = (
         ReadStorage<'s, Viewshed>,
         ReadStorage<'s, Monster>,
+        ReadStorage<'s, Name>,
         Read<'s, Point>,
     );
 
-    fn run(&mut self, (viewsheds, monsters, player): Self::SystemData) {
-        for (vs, _) in (&viewsheds, &monsters).join() {
+    fn run(&mut self, (viewsheds, monsters, names, player): Self::SystemData) {
+        for (vs, _, name) in (&viewsheds, &monsters, &names).join() {
             if vs.visible.contains(&player) {
-                println!("The monster sees you.");
+                println!("{} shouts at you!", name.0);
             }
         }
     }

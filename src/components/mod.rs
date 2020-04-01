@@ -11,6 +11,10 @@ pub struct Player;
 /// Tag component for a monster's entity.
 pub struct Monster;
 
+/// Component for named entities.
+#[derive(Default, Clone, Debug, Component)]
+pub struct Name(pub String);
+
 /// Logical position in the world map.
 #[derive(Copy, Clone, Debug, Component)]
 pub struct Position(pub Point);
