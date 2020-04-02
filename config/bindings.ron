@@ -1,9 +1,13 @@
 (
   axes: {},
   actions: {
-      Up: [[Key(K)], [Key(Up)]],
-      Left: [[Key(H)], [Key(Left)]],
-      Down: [[Key(J)], [Key(Down)]],
-      Right: [[Key(L)], [Key(Right)]],
+      N: [[Key(W)], [Key(Up)]],
+      W: [[Key(A)], [Key(Left)]],
+      S: [[Key(S)], [Key(Down)]],
+      E: [[Key(D)], [Key(Right)]],
+      NW: [[Key(Q)]],
+      SW: [[Key(Z)]],
+      SE: [[Key(C)]],
+      NE: [[Key(E)]],
   },
 )

@@ -13,10 +13,14 @@ impl fmt::Display for AxisBindings {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionBinding {
-    Up,
-    Down,
-    Left,
-    Right,
+    N,
+    W,
+    S,
+    E,
+    NW,
+    SW,
+    SE,
+    NE,
 }
 
 impl fmt::Display for ActionBinding {

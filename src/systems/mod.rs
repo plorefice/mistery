@@ -66,10 +66,26 @@ impl<'s> System<'s> for InputDispatcher {
 
             for action in pressed.iter().filter(|a| !self.was_pressed(a)) {
                 match action {
-                    ActionBinding::Up => to[1] += 1,
-                    ActionBinding::Left => to[0] -= 1,
-                    ActionBinding::Down => to[1] -= 1,
-                    ActionBinding::Right => to[0] += 1,
+                    ActionBinding::N => to[1] += 1,
+                    ActionBinding::W => to[0] -= 1,
+                    ActionBinding::S => to[1] -= 1,
+                    ActionBinding::E => to[0] += 1,
+                    ActionBinding::NW => {
+                        to[1] += 1;
+                        to[0] -= 1;
+                    }
+                    ActionBinding::SW => {
+                        to[1] -= 1;
+                        to[0] -= 1;
+                    }
+                    ActionBinding::SE => {
+                        to[1] -= 1;
+                        to[0] += 1;
+                    }
+                    ActionBinding::NE => {
+                        to[1] += 1;
+                        to[0] += 1;
+                    }
                 }
             }
 
