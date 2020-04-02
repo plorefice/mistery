@@ -39,3 +39,7 @@ impl Viewshed {
         }
     }
 }
+
+/// Component for entities that block their tile in the world map.
+#[derive(Default, Copy, Clone, Debug, Component)]
+pub struct BlocksTile;

@@ -1,19 +1,19 @@
 pub mod ai;
+pub mod map;
 
 use crate::{
-    components::{InputListener, Player, Position, Viewshed},
+    components::{InputListener, Position, Viewshed},
     game::{RunState, TileDimension},
     input::{ActionBinding, GameBindings},
-    map::{ShadowcastFoV, TileKind, WorldMap},
+    map::WorldMap,
     math::Point,
 };
 
 use amethyst::{
-    core::{transform::Transform, Hidden},
+    core::transform::Transform,
     derive::SystemDesc,
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
     input::InputHandler,
-    renderer::SpriteRender,
 };
 
 use std::collections::HashSet;
@@ -31,7 +31,7 @@ impl InputDispatcher {
 
 impl InputDispatcher {
     fn can_move_to(&self, to: Point, map: &Read<WorldMap>) -> bool {
-        map.get(&to) != Some(TileKind::Wall)
+        !map.blocked(&to).unwrap_or(&true)
     }
 }
 
@@ -75,9 +75,9 @@ impl<'s> System<'s> for InputDispatcher {
 
             if self.can_move_to(to, &map) && to != *v {
                 *v = to;
+                *ppos = *v; // update global player position
                 *dirty = true; // recompute viewshed on movement
                 *run_state = RunState::Running; // un-pause game logic
-                *ppos = *v; // update global player position
             }
         }
 
@@ -115,55 +115,6 @@ impl<'s> System<'s> for PositionTranslator {
                 let mut t = Transform::default();
                 t.set_translation_xyz(pos.0[0] as f32 * mul, pos.0[1] as f32 * mul, 0.0);
                 transforms.insert(e, t).expect("inserting transform failed");
-            }
-        }
-    }
-}
-
-#[derive(Default, SystemDesc)]
-pub struct VisibilitySystem;
-
-impl<'s> System<'s> for VisibilitySystem {
-    type SystemData = (
-        Entities<'s>,
-        ReadStorage<'s, Player>,
-        ReadStorage<'s, Position>,
-        ReadStorage<'s, SpriteRender>,
-        WriteStorage<'s, Viewshed>,
-        WriteStorage<'s, Hidden>,
-        Write<'s, WorldMap>,
-    );
-
-    fn run(
-        &mut self,
-        (entities, players, positions, renders, mut viewsheds, mut hiddens, mut map): Self::SystemData,
-    ) {
-        for (player, &Position(pos), vs) in (&entities, &positions, &mut viewsheds).join() {
-            if vs.dirty {
-                vs.visible = ShadowcastFoV::run(&*map, pos[0], pos[1], vs.range);
-                vs.dirty = false;
-
-                // If the entity is also a player, perform some additional actions
-                if players.contains(player) {
-                    // First, reveal the visible tiles on the map
-                    map.clear_visibility();
-                    for pt in &vs.visible {
-                        map.revealed_mut(pt).and_then(|rev| Some(*rev = true));
-                        map.visible_mut(pt).and_then(|viz| Some(*viz = true));
-                    }
-
-                    // For renderable entities, hide those that are not in view
-                    // and show those that are visible
-                    for (e, _, &Position(other)) in (&entities, &renders, &positions).join() {
-                        if e != player {
-                            if vs.visible.contains(&other) {
-                                hiddens.remove(e);
-                            } else {
-                                hiddens.insert(e, Hidden).unwrap();
-                            }
-                        }
-                    }
-                }
             }
         }
     }

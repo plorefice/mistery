@@ -2,7 +2,11 @@ use crate::{
     components::*,
     map::WorldMap,
     renderer::WorldTileMap,
-    systems::{ai::MonsterAI, InputDispatcher, PositionTranslator, VisibilitySystem},
+    systems::{
+        ai::MonsterAI,
+        map::{MapIndexingSystem, VisibilitySystem},
+        InputDispatcher, PositionTranslator,
+    },
     utils,
 };
 
@@ -54,6 +58,7 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
             .with(VisibilitySystem, "visibility_system", &[])
             .with(MonsterAI, "monster_ai_system", &[])
             .with_barrier()
+            .with(MapIndexingSystem, "map_indexing_system", &[])
             .with(PositionTranslator, "position_translator", &[])
             .build();
 
@@ -61,6 +66,8 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         let mut paused_dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
             .with(InputDispatcher::default(), "player_movement_system", &[])
+            .with_barrier()
+            .with(MapIndexingSystem, "map_indexing_system", &[])
             .build();
 
         // Attach the dispatchers to the world
@@ -266,6 +273,7 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .create_entity()
             .with(Monster)
             .with(Position(spawn_point))
+            .with(BlocksTile)
             .with(Viewshed::new(8))
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),

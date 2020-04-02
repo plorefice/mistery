@@ -10,10 +10,19 @@ pub enum TileKind {
 }
 
 impl TileKind {
+    /// Returns whether a player can walk on this tile.
     pub fn is_walkable(&self) -> bool {
         match self {
             TileKind::Wall => false,
             TileKind::Floor => true,
+        }
+    }
+
+    /// Returns whether an entity can see through this tile.
+    pub fn is_solid(&self) -> bool {
+        match self {
+            TileKind::Wall => true,
+            TileKind::Floor => false,
         }
     }
 }
@@ -26,6 +35,7 @@ pub struct WorldMap {
     tiles: Vec<TileKind>,
     revealed: Vec<bool>,
     visible: Vec<bool>,
+    blocked: Vec<bool>,
 }
 
 impl WorldMap {
@@ -43,6 +53,7 @@ impl WorldMap {
             tiles: vec![TileKind::Wall; n],
             revealed: vec![false; n],
             visible: vec![false; n],
+            blocked: vec![false; n],
         };
 
         let mut rng = rand::thread_rng();
@@ -74,6 +85,8 @@ impl WorldMap {
                 map.rooms.push(r);
             }
         }
+
+        map.reload_blocked_tiles();
 
         map
     }
@@ -115,6 +128,24 @@ impl WorldMap {
         self.visible.get_mut(idx)
     }
 
+    /// Returns whether the tile at the given point is currently blocked, if present.
+    pub fn blocked(&self, p: &Point) -> Option<&bool> {
+        self.blocked.get(self.pt_to_idx(p))
+    }
+
+    /// Gets a tile's blocked state mutably.
+    pub fn blocked_mut(&mut self, p: &Point) -> Option<&mut bool> {
+        let idx = self.pt_to_idx(p);
+        self.blocked.get_mut(idx)
+    }
+
+    /// Populates blocked tiles in the map to their default values.
+    pub fn reload_blocked_tiles(&mut self) {
+        for (i, blocked) in self.blocked.iter_mut().enumerate() {
+            *blocked = !self.tiles[i].is_walkable();
+        }
+    }
+
     /// Sets all tiles as not visible.
     pub fn clear_visibility(&mut self) {
         for viz in self.visible.iter_mut() {
@@ -141,10 +172,8 @@ impl WorldMap {
         .iter()
         .filter_map(|&delta| {
             let p = p.translate(delta.0, delta.1);
-            if let Some(tk) = self.get(&p) {
-                if tk.is_walkable() {
-                    return Some(p);
-                }
+            if let Some(false) = self.blocked(&p) {
+                return Some(p);
             }
             None
         })
@@ -279,14 +308,24 @@ impl<'a> ShadowcastFoV<'a> {
                 }
 
                 if blocked {
-                    if self.map.get(&(ax as u32, ay as u32).into()) == Some(TileKind::Wall) {
+                    if self
+                        .map
+                        .get(&(ax as u32, ay as u32).into())
+                        .and_then(|t| Some(t.is_solid()))
+                        .unwrap_or(true)
+                    {
                         next_start_slope = r_slope;
                         continue;
                     } else {
                         blocked = false;
                         start = next_start_slope;
                     }
-                } else if self.map.get(&(ax as u32, ay as u32).into()) == Some(TileKind::Wall) {
+                } else if self
+                    .map
+                    .get(&(ax as u32, ay as u32).into())
+                    .and_then(|t| Some(t.is_solid()))
+                    .unwrap_or(true)
+                {
                     blocked = true;
                     self.cast_light(i + 1, start, l_slope, mul);
                     next_start_slope = r_slope;
