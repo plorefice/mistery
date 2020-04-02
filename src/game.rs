@@ -222,6 +222,12 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
         .with(InputListener)
         .with(Position(pos))
         .with(Viewshed::new(8))
+        .with(CombatStats {
+            max_hp: 30,
+            hp: 30,
+            defense: 2,
+            power: 5,
+        })
         .with(SpriteRender {
             sprite_sheet: sheet,
             sprite_number: utils::to_glyph('@'),
@@ -253,6 +259,12 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .with(Position(spawn_point))
             .with(BlocksTile)
             .with(Viewshed::new(8))
+            .with(CombatStats {
+                max_hp: 16,
+                hp: 16,
+                defense: 1,
+                power: 4,
+            })
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
                 sprite_number: sprite,

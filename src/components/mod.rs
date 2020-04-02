@@ -23,6 +23,7 @@ pub struct Position(pub Point);
 #[derive(Default, Copy, Clone, Debug, Component)]
 pub struct InputListener;
 
+/// Component that keeps track of a set of visible tiles in a range.
 #[derive(Component)]
 pub struct Viewshed {
     pub range: u32,
@@ -43,3 +44,12 @@ impl Viewshed {
 /// Component for entities that block their tile in the world map.
 #[derive(Default, Copy, Clone, Debug, Component)]
 pub struct BlocksTile;
+
+/// Component for entities that can participate in a fight.
+#[derive(Component, Debug)]
+pub struct CombatStats {
+    pub hp: i32,
+    pub max_hp: i32,
+    pub defense: i32,
+    pub power: i32,
+}
