@@ -102,28 +102,6 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         self.create_fps_display(world);
     }
 
-    fn handle_event(
-        &mut self,
-        _data: StateData<'_, GameData<'_, '_>>,
-        event: StateEvent,
-    ) -> SimpleTrans {
-        if let StateEvent::Window(event) = &event {
-            if amethyst::input::is_close_requested(&event) {
-                Trans::Quit
-            } else if amethyst::input::is_key_down(&event, amethyst::input::VirtualKeyCode::Space) {
-                println!(
-                    "{}",
-                    _data.world.read_resource::<FpsCounter>().sampled_fps()
-                );
-                Trans::None
-            } else {
-                Trans::None
-            }
-        } else {
-            Trans::None
-        }
-    }
-
     fn update(&mut self, data: &mut StateData<'_, GameData>) -> SimpleTrans {
         let StateData { world, .. } = data;
 
