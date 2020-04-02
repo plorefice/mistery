@@ -31,12 +31,11 @@ impl WorldTile {
         // grows right-up, so the Y coordinate needs to be flipped before getting the tile.
         let p = Point::new(coordinates[0], map.height() - coordinates[1] - 1);
 
-        map.is_revealed(&p).and_then(
-            |revealed| match (revealed, map.get(&p), map.is_visible(&p)) {
-                (true, Some(kind), Some(visible)) => Some(WorldTileState { kind, visible }),
+        map.revealed(&p)
+            .and_then(|revealed| match (revealed, map.get(&p), map.visible(&p)) {
+                (true, Some(kind), Some(&visible)) => Some(WorldTileState { kind, visible }),
                 _ => None,
-            },
-        )
+            })
     }
 }
 

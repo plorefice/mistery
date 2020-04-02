@@ -148,8 +148,8 @@ impl<'s> System<'s> for VisibilitySystem {
                     // First, reveal the visible tiles on the map
                     map.clear_visibility();
                     for pt in &vs.visible {
-                        map.reveal(pt);
-                        map.set_visible(pt, true);
+                        map.revealed_mut(pt).and_then(|rev| Some(*rev = true));
+                        map.visible_mut(pt).and_then(|viz| Some(*viz = true));
                     }
 
                     // For renderable entities, hide those that are not in view

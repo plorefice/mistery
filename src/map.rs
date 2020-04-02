@@ -94,25 +94,25 @@ impl WorldMap {
     }
 
     /// Returns whether the tile at the given point has been revealed, if present.
-    pub fn is_revealed(&self, p: &Point) -> Option<bool> {
-        self.revealed.get(self.pt_to_idx(p)).cloned()
+    pub fn revealed(&self, p: &Point) -> Option<&bool> {
+        self.revealed.get(self.pt_to_idx(p))
+    }
+
+    /// Gets a tile's revealed state mutably.
+    pub fn revealed_mut(&mut self, p: &Point) -> Option<&mut bool> {
+        let idx = self.pt_to_idx(p);
+        self.revealed.get_mut(idx)
     }
 
     /// Returns whether the tile at the given point is currently visible, if present.
-    pub fn is_visible(&self, p: &Point) -> Option<bool> {
-        self.visible.get(self.pt_to_idx(p)).cloned()
+    pub fn visible(&self, p: &Point) -> Option<&bool> {
+        self.visible.get(self.pt_to_idx(p))
     }
 
-    /// Marks the tile at the given point as revealed.
-    pub fn reveal(&mut self, p: &Point) {
+    /// Gets a tile's visibility state mutably.
+    pub fn visible_mut(&mut self, p: &Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
-        self.revealed[idx] = true;
-    }
-
-    /// Changes the visibility of the tile at the given point.
-    pub fn set_visible(&mut self, p: &Point, visible: bool) {
-        let idx = self.pt_to_idx(p);
-        self.visible[idx] = visible;
+        self.visible.get_mut(idx)
     }
 
     /// Sets all tiles as not visible.
