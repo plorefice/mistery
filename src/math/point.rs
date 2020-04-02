@@ -27,6 +27,18 @@ impl Point {
     pub fn y(&self) -> u32 {
         self.0[1]
     }
+
+    /// Returns a new Point shifted by `(x, y)`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if shifting either coordinate results in a negative number.
+    pub fn translate(&self, x: i32, y: i32) -> Point {
+        assert!((self.x() as i32 + x) >= 0);
+        assert!((self.y() as i32 + y) >= 0);
+
+        Point::new((self.x() as i32 + x) as u32, (self.y() as i32 + y) as u32)
+    }
 }
 
 impl From<[u32; 2]> for Point {

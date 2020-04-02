@@ -1,11 +1,12 @@
 use crate::{
-    components::{Monster, Name, Viewshed},
+    components::{Monster, Name, Position, Viewshed},
+    map::{self, WorldMap},
     math::Point,
 };
 
 use amethyst::{
     derive::SystemDesc,
-    ecs::{Join, Read, ReadStorage, System, SystemData},
+    ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage},
 };
 
 #[derive(SystemDesc)]
@@ -13,16 +14,22 @@ pub struct MonsterAI;
 
 impl<'s> System<'s> for MonsterAI {
     type SystemData = (
-        ReadStorage<'s, Viewshed>,
+        WriteStorage<'s, Position>,
+        WriteStorage<'s, Viewshed>,
         ReadStorage<'s, Monster>,
         ReadStorage<'s, Name>,
         Read<'s, Point>,
+        Read<'s, WorldMap>,
     );
 
-    fn run(&mut self, (viewsheds, monsters, names, player): Self::SystemData) {
-        for (vs, _, name) in (&viewsheds, &monsters, &names).join() {
+    fn run(&mut self, (mut positions, mut viewsheds, monsters, _, player, map): Self::SystemData) {
+        for (monster, vs, _) in (&mut positions, &mut viewsheds, &monsters).join() {
+            let monster = &mut monster.0;
             if vs.visible.contains(&player) {
-                println!("{} shouts at you!", name.0);
+                if let Some(path) = map::a_star_search(&*map, monster, &*player) {
+                    *monster = path[1]; // move monster
+                    vs.dirty = true; // recompute viewshed
+                }
             }
         }
     }

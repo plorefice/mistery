@@ -1184,6 +1184,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fixedbitset"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
+
+[[package]]
 name = "float-ord"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1562,6 +1568,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "indexmap"
+version = "1.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "076f042c5b7b98f31d205f1249267e12a6518c1481e9dae9764af19b707d2292"
+dependencies = [
+ "autocfg 1.0.0",
+]
+
+[[package]]
 name = "inflate"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1904,6 +1919,7 @@ name = "mistery"
 version = "0.1.0"
 dependencies = [
  "amethyst",
+ "pathfinding",
  "rand 0.7.3",
  "serde",
  "serde_derive",
@@ -2232,6 +2248,18 @@ dependencies = [
  "proc-macro2 1.0.9",
  "quote 1.0.3",
  "syn 1.0.17",
+]
+
+[[package]]
+name = "pathfinding"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86f4d8cc85ca67860ef4324faf86973a39e4e1c78338987eda29a8e6b6ec0c0e"
+dependencies = [
+ "fixedbitset",
+ "indexmap",
+ "itertools",
+ "num-traits 0.2.11",
 ]
 
 [[package]]

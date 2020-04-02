@@ -1,12 +1,21 @@
-use crate::math::{Point, Rect};
+use crate::math::{self, Point, Rect};
 
 use rand::Rng;
-use std::collections::HashSet;
+use std::{collections::HashSet, iter};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TileKind {
     Wall,
     Floor,
+}
+
+impl TileKind {
+    pub fn is_walkable(&self) -> bool {
+        match self {
+            TileKind::Wall => false,
+            TileKind::Floor => true,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -111,6 +120,35 @@ impl WorldMap {
         for viz in self.visible.iter_mut() {
             *viz = false;
         }
+    }
+
+    /// Computes all the walkable adjacent positions.
+    ///
+    /// Adjacency is computed on both cardinal intercardinal points.
+    pub fn get_adjacent_exits(&self, p: &Point) -> Vec<Point> {
+        // Note: this order affects the paths returned by the A* algorithm.
+        // Keep the cardinal positions first, to avoid glitchy side movements.
+        [
+            (0, 1),
+            (1, 0),
+            (0, -1),
+            (-1, 0),
+            (1, 1),
+            (1, -1),
+            (-1, -1),
+            (-1, 1),
+        ]
+        .iter()
+        .filter_map(|&delta| {
+            let p = p.translate(delta.0, delta.1);
+            if let Some(tk) = self.get(&p) {
+                if tk.is_walkable() {
+                    return Some(p);
+                }
+            }
+            None
+        })
+        .collect()
     }
 
     /// Returns the a reference to the rooms in this map.
@@ -256,4 +294,17 @@ impl<'a> ShadowcastFoV<'a> {
             }
         }
     }
+}
+
+/// Computes a path between two points on the map, if it exists.
+///
+/// The resulting path contains the start and end points as first and last elements.
+pub fn a_star_search(map: &WorldMap, start: &Point, end: &Point) -> Option<Vec<Point>> {
+    pathfinding::prelude::astar(
+        start,
+        |pt| map.get_adjacent_exits(pt).into_iter().zip(iter::repeat(1)),
+        |pt| math::distance_2d(pt, end),
+        |pt| pt == end,
+    )
+    .map(|(path, _)| path)
 }
