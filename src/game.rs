@@ -4,6 +4,7 @@ use crate::{
     renderer::WorldTileMap,
     systems::{
         ai::MonsterAI,
+        combat::CombatResolver,
         map::{MoveResolver, VisibilitySystem},
         InputDispatcher, PositionTranslator,
     },
@@ -55,9 +56,10 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         // Create system dispatcher for the running state
         let mut running_dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
-            .with(VisibilitySystem, "visibility_system", &[])
-            .with(MonsterAI, "monster_ai_system", &["visibility_system"])
-            .with(MoveResolver, "move_resolver_system", &["monster_ai_system"])
+            .with(VisibilitySystem, "visibility", &[])
+            .with(MonsterAI, "monster_ai", &["visibility"])
+            .with(MoveResolver, "move_resolver", &["monster_ai"])
+            .with(CombatResolver, "combat_resolver", &["move_resolver"])
             .with_barrier()
             .with(PositionTranslator, "position_translator", &[])
             .build();
@@ -65,7 +67,7 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         // Create system dispatcher for the paused state
         let mut paused_dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
-            .with(InputDispatcher::default(), "player_movement_system", &[])
+            .with(InputDispatcher::default(), "player_movement", &[])
             .build();
 
         // Attach the dispatchers to the world
@@ -217,15 +219,17 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
     world
         .create_entity()
         .with(Player)
+        .with(Faction(0)) // 0 is the faction for friendlies
         .with(InputListener)
         .with(Position(pos))
+        .with(BlocksTile)
         .with(Viewshed::new(8))
-        // .with(JoinsCombat {
-        //     max_hp: 30,
-        //     hp: 30,
-        //     defense: 2,
-        //     power: 5,
-        // })
+        .with(CombatStats {
+            max_hp: 30,
+            hp: 30,
+            defense: 2,
+            power: 5,
+        })
         .with(SpriteRender {
             sprite_sheet: sheet,
             sprite_number: utils::to_glyph('@'),
@@ -253,16 +257,16 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
 
         world
             .create_entity()
-            .with(Monster)
+            .with(Faction(1)) // 1 is the faction for enemies
             .with(Position(spawn_point))
             .with(BlocksTile)
             .with(Viewshed::new(8))
-            // .with(JoinsCombat {
-            //     max_hp: 16,
-            //     hp: 16,
-            //     defense: 1,
-            //     power: 4,
-            // })
+            .with(CombatStats {
+                max_hp: 16,
+                hp: 16,
+                defense: 1,
+                power: 4,
+            })
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
                 sprite_number: sprite,

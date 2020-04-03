@@ -7,9 +7,9 @@ use std::collections::HashSet;
 #[derive(Default, Copy, Clone, Debug, Component)]
 pub struct Player;
 
-#[derive(Default, Copy, Clone, Debug, Component)]
-/// Tag component for a monster's entity.
-pub struct Monster;
+/// Tag component for an entity belonging to a faction.
+#[derive(Default, Copy, Clone, Debug, PartialEq, Component)]
+pub struct Faction(pub u32);
 
 /// Component for named entities.
 #[derive(Default, Clone, Debug, Component)]
@@ -46,8 +46,8 @@ impl Viewshed {
 pub struct BlocksTile;
 
 /// Component for entities that can participate in a fight.
-#[derive(Component, Debug)]
-pub struct JoinsCombat {
+#[derive(Debug, Component)]
+pub struct CombatStats {
     pub hp: i32,
     pub max_hp: i32,
     pub defense: i32,

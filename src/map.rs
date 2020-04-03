@@ -350,7 +350,16 @@ impl<'a> ShadowcastFoV<'a> {
 pub fn a_star_search(map: &WorldMap, start: &Point, end: &Point) -> Option<Vec<Point>> {
     pathfinding::prelude::astar(
         start,
-        |pt| map.get_adjacent_exits(pt).into_iter().zip(iter::repeat(1)),
+        |pt| {
+            // Workaround to allow pathfinding to end up on a blocked tile
+            if math::distance_2d(pt, end) == 1 {
+                vec![*end]
+            } else {
+                map.get_adjacent_exits(pt)
+            }
+            .into_iter()
+            .zip(iter::repeat(1))
+        },
         |pt| math::distance_2d(pt, end),
         |pt| pt == end,
     )

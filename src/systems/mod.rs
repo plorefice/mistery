@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod combat;
 pub mod map;
 
 use crate::{

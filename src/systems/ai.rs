@@ -1,7 +1,7 @@
 use crate::{
-    components::{Monster, Name, Position, Viewshed, WantsToMove},
+    components::*,
     map::{self, WorldMap},
-    math::{self, Point},
+    math,
 };
 
 use amethyst::{
@@ -15,28 +15,39 @@ pub struct MonsterAI;
 impl<'s> System<'s> for MonsterAI {
     type SystemData = (
         Entities<'s>,
-        ReadStorage<'s, Monster>,
+        ReadStorage<'s, Player>,
+        ReadStorage<'s, Faction>,
         ReadStorage<'s, Position>,
         ReadStorage<'s, Viewshed>,
-        ReadStorage<'s, Name>,
         WriteStorage<'s, WantsToMove>,
-        Read<'s, Point>,
+        WriteStorage<'s, TargetedForCombat>,
         Read<'s, WorldMap>,
     );
 
     fn run(
         &mut self,
-        (entities, monsters, positions, viewsheds, names, mut movers, player, map): Self::SystemData,
+        (entities, players, factions, positions, viewsheds, mut movers, mut in_combat, map): Self::SystemData,
     ) {
-        for (e, _, vs, &Position(p), name) in
-            (&entities, &monsters, &viewsheds, &positions, &names).join()
-        {
-            if vs.visible.contains(&player) {
-                // If we are in a tile adjacent to the player, yell at him, otherwise move
-                if math::distance_2d(&p, &player) == 1 {
-                    println!("{} yells at you!", name.0);
-                } else if let Some(path) = map::a_star_search(&*map, &p, &*player) {
-                    movers.insert(e, WantsToMove { to: path[1] }).unwrap();
+        let monster_comps = (&entities, !&players, &factions, &viewsheds, &positions);
+        let target_comps = (&entities, &factions, &positions);
+
+        for (e1, _, Faction(f1), vs, &Position(p1)) in monster_comps.join() {
+            for (e2, Faction(f2), &Position(p2)) in target_comps.join() {
+                // Skip not visibible and allies
+                if f1 == f2 || !vs.visible.contains(&p2) {
+                    break;
+                }
+
+                // If in range, target for combat, otherwise move closer.
+                if math::distance_2d(&p1, &p2) == 1 {
+                    in_combat
+                        .entry(e2)
+                        .unwrap()
+                        .or_insert(TargetedForCombat::default())
+                        .by
+                        .push(e1);
+                } else if let Some(path) = map::a_star_search(&*map, &p1, &p2) {
+                    movers.insert(e1, WantsToMove { to: path[1] }).unwrap();
                 }
             }
         }
