@@ -54,6 +54,12 @@ pub struct JoinsCombat {
     pub power: i32,
 }
 
+/// Component for entities that have decided to move in their turn.
+#[derive(Debug, Component)]
+pub struct WantsToMove {
+    pub to: Point,
+}
+
 /// Component for entities that are being targeted by another entity.
 #[derive(Default, Debug, Component)]
 pub struct TargetedForCombat {

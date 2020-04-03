@@ -2,11 +2,9 @@ pub mod ai;
 pub mod map;
 
 use crate::{
-    components::{InputListener, Position, Viewshed},
+    components::{InputListener, Position, WantsToMove},
     game::{RunState, TileDimension},
     input::{ActionBinding, GameBindings},
-    map::WorldMap,
-    math::Point,
 };
 
 use amethyst::{
@@ -18,6 +16,7 @@ use amethyst::{
 
 use std::collections::HashSet;
 
+/// System for input handling and dispatching.
 #[derive(Default, SystemDesc)]
 pub struct InputDispatcher {
     pressed: HashSet<ActionBinding>,
@@ -27,26 +26,21 @@ impl InputDispatcher {
     fn was_pressed(&self, action: &ActionBinding) -> bool {
         self.pressed.contains(action)
     }
-
-    fn can_move_to(&self, to: Point, map: &Read<WorldMap>) -> bool {
-        !map.blocked(&to).unwrap_or(&true)
-    }
 }
 
 impl<'s> System<'s> for InputDispatcher {
     type SystemData = (
-        WriteStorage<'s, InputListener>,
-        WriteStorage<'s, Position>,
-        WriteStorage<'s, Viewshed>,
+        Entities<'s>,
+        ReadStorage<'s, InputListener>,
+        ReadStorage<'s, Position>,
+        WriteStorage<'s, WantsToMove>,
         Read<'s, InputHandler<GameBindings>>,
-        Read<'s, WorldMap>,
         Write<'s, RunState>,
-        Write<'s, Point>,
     );
 
     fn run(
         &mut self,
-        (mut movers, mut positions, mut viewsheds, input, map, mut run_state, mut ppos): Self::SystemData,
+        (entities, listeners, positions, mut movers, input, mut run_state): Self::SystemData,
     ) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
@@ -57,10 +51,8 @@ impl<'s> System<'s> for InputDispatcher {
             .filter(|a| input.action_is_down(a).unwrap_or_default())
             .collect();
 
-        for (_, Position(ref mut v), Viewshed { ref mut dirty, .. }) in
-            (&mut movers, &mut positions, &mut viewsheds).join()
-        {
-            let mut to = *v;
+        for (e, _, &Position(p)) in (&entities, &listeners, &positions).join() {
+            let mut to = p;
 
             for action in pressed.iter().filter(|a| !self.was_pressed(a)) {
                 match action {
@@ -87,10 +79,8 @@ impl<'s> System<'s> for InputDispatcher {
                 }
             }
 
-            if self.can_move_to(to, &map) && to != *v {
-                *v = to;
-                *ppos = *v; // update global player position
-                *dirty = true; // recompute viewshed on movement
+            if to != p {
+                movers.insert(e, WantsToMove { to }).unwrap();
                 *run_state = RunState::Running; // un-pause game logic
             }
         }

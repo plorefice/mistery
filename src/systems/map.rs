@@ -1,12 +1,13 @@
 use crate::{
-    components::{BlocksTile, Player, Position, Viewshed},
+    components::{BlocksTile, Player, Position, Viewshed, WantsToMove},
     map::{ShadowcastFoV, WorldMap},
+    math::Point,
 };
 
 use amethyst::{
     core::Hidden,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Entity, Join, ReadStorage, System, SystemData, Write, WriteStorage},
     renderer::SpriteRender,
 };
 
@@ -60,21 +61,61 @@ impl<'s> System<'s> for VisibilitySystem {
     }
 }
 
-/// System that updates blocked tiles in the world map.
+/// System that manages entities that want to move in this turn.
 #[derive(Default, SystemDesc)]
-pub struct MapIndexingSystem;
+pub struct MoveResolver;
 
-impl<'s> System<'s> for MapIndexingSystem {
+impl MoveResolver {
+    fn move_entity(
+        &self,
+        _: Entity,
+        map: &mut WorldMap,
+        from: &mut Point,
+        to: Point,
+        blocks: bool,
+    ) {
+        // Move the blocked tile, if the entity is blocking
+        if blocks {
+            map.blocked_mut(from).and_then(|b| Some(*b = false));
+            map.blocked_mut(&to).and_then(|b| Some(*b = true));
+        }
+
+        *from = to;
+    }
+}
+
+impl<'s> System<'s> for MoveResolver {
     type SystemData = (
-        Write<'s, WorldMap>,
-        ReadStorage<'s, Position>,
+        Entities<'s>,
+        ReadStorage<'s, Player>,
         ReadStorage<'s, BlocksTile>,
+        WriteStorage<'s, Position>,
+        WriteStorage<'s, WantsToMove>,
+        WriteStorage<'s, Viewshed>,
+        Write<'s, Point>,
+        Write<'s, WorldMap>,
     );
 
-    fn run(&mut self, (mut map, positions, blockers): Self::SystemData) {
-        map.reload_blocked_tiles();
-        for (pos, _) in (&positions, &blockers).join() {
-            map.blocked_mut(&pos.0).and_then(|b| Some(*b = true));
+    fn run(
+        &mut self,
+        (entitites, players, blockers, mut positions, mut movers, mut viewsheds, mut ppos, mut map): Self::SystemData,
+    ) {
+        for (e, Position(ref mut p), WantsToMove { to }) in
+            (&entitites, &mut positions, movers.drain()).join()
+        {
+            if map.blocked(&to) == Some(&false) {
+                self.move_entity(e, &mut map, p, to, blockers.contains(e)); // update map state
+
+                // If the entity has a Viewshed, recompute it on movement
+                if let Some(vs) = viewsheds.get_mut(e) {
+                    vs.dirty = true;
+                }
+
+                // If the entity is the player, update its global position
+                if players.contains(e) {
+                    *ppos = to;
+                }
+            }
         }
     }
 }

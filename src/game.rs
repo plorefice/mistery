@@ -4,7 +4,7 @@ use crate::{
     renderer::WorldTileMap,
     systems::{
         ai::MonsterAI,
-        map::{MapIndexingSystem, VisibilitySystem},
+        map::{MoveResolver, VisibilitySystem},
         InputDispatcher, PositionTranslator,
     },
     utils,
@@ -56,9 +56,9 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         let mut running_dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
             .with(VisibilitySystem, "visibility_system", &[])
-            .with(MonsterAI, "monster_ai_system", &[])
+            .with(MonsterAI, "monster_ai_system", &["visibility_system"])
+            .with(MoveResolver, "move_resolver_system", &["monster_ai_system"])
             .with_barrier()
-            .with(MapIndexingSystem, "map_indexing_system", &[])
             .with(PositionTranslator, "position_translator", &[])
             .build();
 
@@ -66,8 +66,6 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         let mut paused_dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
             .with(InputDispatcher::default(), "player_movement_system", &[])
-            .with_barrier()
-            .with(MapIndexingSystem, "map_indexing_system", &[])
             .build();
 
         // Attach the dispatchers to the world
@@ -222,12 +220,12 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
         .with(InputListener)
         .with(Position(pos))
         .with(Viewshed::new(8))
-        .with(JoinsCombat {
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 5,
-        })
+        // .with(JoinsCombat {
+        //     max_hp: 30,
+        //     hp: 30,
+        //     defense: 2,
+        //     power: 5,
+        // })
         .with(SpriteRender {
             sprite_sheet: sheet,
             sprite_number: utils::to_glyph('@'),
@@ -259,12 +257,12 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .with(Position(spawn_point))
             .with(BlocksTile)
             .with(Viewshed::new(8))
-            .with(JoinsCombat {
-                max_hp: 16,
-                hp: 16,
-                defense: 1,
-                power: 4,
-            })
+            // .with(JoinsCombat {
+            //     max_hp: 16,
+            //     hp: 16,
+            //     defense: 1,
+            //     power: 4,
+            // })
             .with(SpriteRender {
                 sprite_sheet: sheet.clone(),
                 sprite_number: sprite,
