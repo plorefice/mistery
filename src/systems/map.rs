@@ -93,7 +93,7 @@ impl<'s> System<'s> for MoveResolver {
         ReadStorage<'s, BlocksTile>,
         WriteStorage<'s, Position>,
         WriteStorage<'s, WantsToMove>,
-        WriteStorage<'s, TargetedForCombat>,
+        WriteStorage<'s, TargetedForMelee>,
         WriteStorage<'s, Viewshed>,
         Write<'s, Point>,
         Write<'s, WorldMap>,
@@ -109,7 +109,7 @@ impl<'s> System<'s> for MoveResolver {
             blockers,
             mut positions,
             mut movers,
-            mut in_combat,
+            mut melee_targets,
             mut viewsheds,
             mut ppos,
             mut map,
@@ -133,19 +133,14 @@ impl<'s> System<'s> for MoveResolver {
                     }
                 }
                 Some(&true) => {
+                    let victims = (&entitites, &factions, &positions, &combatants);
+
                     // If a fighter tries to moves tries to move into another fighter's tile
                     // of a different faction, engage him in combat instead.
                     if let Some(Faction(f1)) = factions.get(e1) {
-                        for (e2, Faction(f2), Position(p2), _) in
-                            (&entitites, &factions, &positions, &combatants).join()
-                        {
+                        for (victim, Faction(f2), Position(p2), _) in victims.join() {
                             if to == *p2 && f1 != f2 {
-                                in_combat
-                                    .entry(e2)
-                                    .unwrap()
-                                    .or_insert(TargetedForCombat::default())
-                                    .by
-                                    .push(e1);
+                                TargetedForMelee::target(&mut melee_targets, e1, victim);
                             }
                         }
                     }

@@ -12,12 +12,12 @@ impl<'s> System<'s> for CombatResolver {
     type SystemData = (
         ReadStorage<'s, Name>,
         ReadStorage<'s, CombatStats>,
-        WriteStorage<'s, TargetedForCombat>,
+        WriteStorage<'s, TargetedForMelee>,
     );
 
-    fn run(&mut self, (names, combatants, mut in_combat): Self::SystemData) {
-        for (Name(n1), _, TargetedForCombat { ref by }) in
-            (&names, &combatants, in_combat.drain()).join()
+    fn run(&mut self, (names, combatants, mut melee_targets): Self::SystemData) {
+        for (Name(n1), _, TargetedForMelee { ref by }) in
+            (&names, &combatants, melee_targets.drain()).join()
         {
             for e2 in by {
                 if let Some(Name(n2)) = names.get(*e2) {

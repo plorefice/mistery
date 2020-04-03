@@ -20,19 +20,19 @@ impl<'s> System<'s> for MonsterAI {
         ReadStorage<'s, Position>,
         ReadStorage<'s, Viewshed>,
         WriteStorage<'s, WantsToMove>,
-        WriteStorage<'s, TargetedForCombat>,
+        WriteStorage<'s, TargetedForMelee>,
         Read<'s, WorldMap>,
     );
 
     fn run(
         &mut self,
-        (entities, players, factions, positions, viewsheds, mut movers, mut in_combat, map): Self::SystemData,
+        (entities, players, factions, positions, viewsheds, mut movers, mut melee_targets, map): Self::SystemData,
     ) {
-        let monster_comps = (&entities, !&players, &factions, &viewsheds, &positions);
-        let target_comps = (&entities, &factions, &positions);
+        let attackers = (&entities, !&players, &factions, &viewsheds, &positions);
+        let targets = (&entities, &factions, &positions);
 
-        for (e1, _, Faction(f1), vs, &Position(p1)) in monster_comps.join() {
-            for (e2, Faction(f2), &Position(p2)) in target_comps.join() {
+        for (attacker, _, Faction(f1), vs, &Position(p1)) in attackers.join() {
+            for (target, Faction(f2), &Position(p2)) in targets.join() {
                 // Skip not visibible and allies
                 if f1 == f2 || !vs.visible.contains(&p2) {
                     break;
@@ -40,14 +40,11 @@ impl<'s> System<'s> for MonsterAI {
 
                 // If in range, target for combat, otherwise move closer.
                 if math::distance_2d(&p1, &p2) == 1 {
-                    in_combat
-                        .entry(e2)
-                        .unwrap()
-                        .or_insert(TargetedForCombat::default())
-                        .by
-                        .push(e1);
+                    TargetedForMelee::target(&mut melee_targets, attacker, target);
                 } else if let Some(path) = map::a_star_search(&*map, &p1, &p2) {
-                    movers.insert(e1, WantsToMove { to: path[1] }).unwrap();
+                    movers
+                        .insert(attacker, WantsToMove { to: path[1] })
+                        .unwrap();
                 }
             }
         }

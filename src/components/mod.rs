@@ -1,6 +1,6 @@
 use crate::math::Point;
 
-use amethyst::ecs::{Component, DenseVecStorage, Entity};
+use amethyst::ecs::{Component, DenseVecStorage, Entity, WriteStorage};
 use std::collections::HashSet;
 
 /// Tag component for the player's entity.
@@ -60,8 +60,20 @@ pub struct WantsToMove {
     pub to: Point,
 }
 
-/// Component for entities that are being targeted by another entity.
+/// Component for entities that are being targeted by another entity for melee combat.
 #[derive(Default, Debug, Component)]
-pub struct TargetedForCombat {
+pub struct TargetedForMelee {
     pub by: Vec<Entity>,
+}
+
+impl TargetedForMelee {
+    /// Targets an entity for melee combat.
+    pub fn target(store: &mut WriteStorage<TargetedForMelee>, attacker: Entity, victim: Entity) {
+        store
+            .entry(victim)
+            .unwrap()
+            .or_insert(TargetedForMelee::default())
+            .by
+            .push(attacker);
+    }
 }
