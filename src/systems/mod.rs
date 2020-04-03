@@ -27,9 +27,7 @@ impl InputDispatcher {
     fn was_pressed(&self, action: &ActionBinding) -> bool {
         self.pressed.contains(action)
     }
-}
 
-impl InputDispatcher {
     fn can_move_to(&self, to: Point, map: &Read<WorldMap>) -> bool {
         !map.blocked(&to).unwrap_or(&true)
     }

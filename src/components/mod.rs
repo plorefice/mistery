@@ -1,6 +1,6 @@
 use crate::math::Point;
 
-use amethyst::ecs::{Component, DenseVecStorage};
+use amethyst::ecs::{Component, DenseVecStorage, Entity};
 use std::collections::HashSet;
 
 /// Tag component for the player's entity.
@@ -47,9 +47,15 @@ pub struct BlocksTile;
 
 /// Component for entities that can participate in a fight.
 #[derive(Component, Debug)]
-pub struct CombatStats {
+pub struct JoinsCombat {
     pub hp: i32,
     pub max_hp: i32,
     pub defense: i32,
     pub power: i32,
+}
+
+/// Component for entities that are being targeted by another entity.
+#[derive(Default, Debug, Component)]
+pub struct TargetedForCombat {
+    pub by: Vec<Entity>,
 }

@@ -9,6 +9,12 @@ pub enum TileKind {
     Floor,
 }
 
+impl Default for TileKind {
+    fn default() -> Self {
+        TileKind::Wall
+    }
+}
+
 impl TileKind {
     /// Returns whether a player can walk on this tile.
     pub fn is_walkable(&self) -> bool {
@@ -27,15 +33,21 @@ impl TileKind {
     }
 }
 
+/// Internal state of a map tile.
+#[derive(Default, Copy, Clone)]
+struct TileState {
+    kind: TileKind,
+    revealed: bool,
+    visible: bool,
+    blocked: bool,
+}
+
 #[derive(Default)]
 pub struct WorldMap {
     width: u32,
     height: u32,
     rooms: Vec<Rect>,
-    tiles: Vec<TileKind>,
-    revealed: Vec<bool>,
-    visible: Vec<bool>,
-    blocked: Vec<bool>,
+    tiles: Vec<TileState>,
 }
 
 impl WorldMap {
@@ -50,10 +62,7 @@ impl WorldMap {
             width,
             height,
             rooms: Vec::with_capacity(MAX_ROOMS),
-            tiles: vec![TileKind::Wall; n],
-            revealed: vec![false; n],
-            visible: vec![false; n],
-            blocked: vec![false; n],
+            tiles: vec![TileState::default(); n],
         };
 
         let mut rng = rand::thread_rng();
@@ -103,53 +112,53 @@ impl WorldMap {
 
     /// Returns the tile at the given point, if present.
     pub fn get(&self, p: &Point) -> Option<TileKind> {
-        self.tiles.get(self.pt_to_idx(p)).cloned()
+        self.tiles.get(self.pt_to_idx(p)).map(|t| t.kind)
     }
 
     /// Returns whether the tile at the given point has been revealed, if present.
     pub fn revealed(&self, p: &Point) -> Option<&bool> {
-        self.revealed.get(self.pt_to_idx(p))
+        self.tiles.get(self.pt_to_idx(p)).map(|t| &t.revealed)
     }
 
     /// Gets a tile's revealed state mutably.
     pub fn revealed_mut(&mut self, p: &Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
-        self.revealed.get_mut(idx)
+        self.tiles.get_mut(idx).map(|t| &mut t.revealed)
     }
 
     /// Returns whether the tile at the given point is currently visible, if present.
     pub fn visible(&self, p: &Point) -> Option<&bool> {
-        self.visible.get(self.pt_to_idx(p))
+        self.tiles.get(self.pt_to_idx(p)).map(|t| &t.visible)
     }
 
     /// Gets a tile's visibility state mutably.
     pub fn visible_mut(&mut self, p: &Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
-        self.visible.get_mut(idx)
+        self.tiles.get_mut(idx).map(|t| &mut t.visible)
     }
 
     /// Returns whether the tile at the given point is currently blocked, if present.
     pub fn blocked(&self, p: &Point) -> Option<&bool> {
-        self.blocked.get(self.pt_to_idx(p))
+        self.tiles.get(self.pt_to_idx(p)).map(|t| &t.blocked)
     }
 
     /// Gets a tile's blocked state mutably.
     pub fn blocked_mut(&mut self, p: &Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
-        self.blocked.get_mut(idx)
+        self.tiles.get_mut(idx).map(|t| &mut t.blocked)
     }
 
     /// Populates blocked tiles in the map to their default values.
     pub fn reload_blocked_tiles(&mut self) {
-        for (i, blocked) in self.blocked.iter_mut().enumerate() {
-            *blocked = !self.tiles[i].is_walkable();
+        for t in self.tiles.iter_mut() {
+            t.blocked = !t.kind.is_walkable();
         }
     }
 
     /// Sets all tiles as not visible.
     pub fn clear_visibility(&mut self) {
-        for viz in self.visible.iter_mut() {
-            *viz = false;
+        for t in self.tiles.iter_mut() {
+            t.visible = false;
         }
     }
 
@@ -197,7 +206,7 @@ impl WorldMap {
         for y in room.bottom() + 1..room.top() {
             for x in room.left() + 1..room.right() {
                 let idx = self.xy_to_idx(x, y);
-                self.tiles[idx] = TileKind::Floor
+                self.tiles[idx].kind = TileKind::Floor
             }
         }
     }
@@ -205,14 +214,14 @@ impl WorldMap {
     fn create_horizontal_corridor(&mut self, x1: u32, x2: u32, y: u32) {
         for x in x1.min(x2)..=x1.max(x2) {
             let idx = self.xy_to_idx(x, y);
-            self.tiles[idx] = TileKind::Floor;
+            self.tiles[idx].kind = TileKind::Floor;
         }
     }
 
     fn create_vertical_corridor(&mut self, y1: u32, y2: u32, x: u32) {
         for y in y1.min(y2)..=y1.max(y2) {
             let idx = self.xy_to_idx(x, y);
-            self.tiles[idx] = TileKind::Floor;
+            self.tiles[idx].kind = TileKind::Floor;
         }
     }
 }

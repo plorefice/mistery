@@ -222,7 +222,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
         .with(InputListener)
         .with(Position(pos))
         .with(Viewshed::new(8))
-        .with(CombatStats {
+        .with(JoinsCombat {
             max_hp: 30,
             hp: 30,
             defense: 2,
@@ -259,7 +259,7 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
             .with(Position(spawn_point))
             .with(BlocksTile)
             .with(Viewshed::new(8))
-            .with(CombatStats {
+            .with(JoinsCombat {
                 max_hp: 16,
                 hp: 16,
                 defense: 1,
