@@ -1,17 +1,22 @@
+//! This module contains all the map-related systems.
+
 use crate::{
     components::*,
+    game::TileDimension,
     map::{ShadowcastFoV, WorldMap},
     math::Point,
 };
 
 use amethyst::{
-    core::Hidden,
+    core::{transform::Transform, Hidden},
     derive::SystemDesc,
-    ecs::{Entities, Entity, Join, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Entity, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
     renderer::SpriteRender,
 };
 
 /// Refreshes the map's internal index.
+///
+/// Mainly used for recomputing the map's blocked tiles once a unit dies.
 #[derive(Default, SystemDesc)]
 pub struct MapIndexingSystem;
 
@@ -31,7 +36,9 @@ impl<'s> System<'s> for MapIndexingSystem {
     }
 }
 
-/// System that manages and updates Viewshed components.
+/// Computes a unit's field of vision.
+///
+/// For each entity with a [`Viewshed`] component, this system computes their field of vision.
 #[derive(Default, SystemDesc)]
 pub struct VisibilitySystem;
 
@@ -168,6 +175,40 @@ impl<'s> System<'s> for MoveResolver {
                     }
                 }
                 _ => (),
+            }
+        }
+    }
+}
+
+/// Converts a `Position` component into a `Transform` component.
+///
+/// The default renderer works with pixels, while for this kind of game logic
+/// it's easier to reason in terms of integer tile indexes.
+/// This system takes this logical representation of position and turns it into
+/// something that the rendering system can actually work with.
+#[derive(Default, SystemDesc)]
+pub struct PositionTranslator;
+
+impl<'s> System<'s> for PositionTranslator {
+    type SystemData = (
+        Entities<'s>,
+        ReadStorage<'s, Position>,
+        WriteStorage<'s, Transform>,
+        Read<'s, TileDimension>,
+    );
+
+    fn run(&mut self, (entities, positions, mut transforms, tile_dimension): Self::SystemData) {
+        let mul = tile_dimension.0 as f32;
+
+        for (e, pos) in (&*entities, &positions).join() {
+            if let Some(t) = transforms.get_mut(e) {
+                t.set_translation_xyz(pos.0[0] as f32 * mul, pos.0[1] as f32 * mul, 0.0);
+            } else {
+                // If the entity was created without a Transform component,
+                // add one the first time the system is run.
+                let mut t = Transform::default();
+                t.set_translation_xyz(pos.0[0] as f32 * mul, pos.0[1] as f32 * mul, 0.0);
+                transforms.insert(e, t).expect("inserting transform failed");
             }
         }
     }

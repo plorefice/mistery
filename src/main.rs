@@ -10,7 +10,7 @@ mod utils;
 use game::GameState;
 use input::GameBindings;
 use renderer::*;
-use systems::{ai::*, combat::*, map::*, *};
+use systems::*;
 
 use amethyst::{
     core::transform::TransformBundle,

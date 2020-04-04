@@ -1,3 +1,5 @@
+//! This module contains all the combat-related systems.
+
 use crate::{components::*, game::CombatLog};
 
 use amethyst::{
@@ -5,6 +7,66 @@ use amethyst::{
     ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
+/// Enum representing one of the possible turns in the state logic.
+#[derive(Copy, Clone, PartialEq)]
+pub enum Turn {
+    Player,
+    Others,
+}
+
+impl Default for Turn {
+    fn default() -> Self {
+        Turn::Player
+    }
+}
+
+/// System that manages which entities get to act in the current turn.
+///
+/// At each invokation, the system checks which turns it's currently on,
+/// and for each entity that should act on that turn, it checks if any of them
+/// still has any AP left. If so, the turn keeps going until all entities
+/// able to act have depleted their APs. Otherwise, the turn changes, and all
+/// the entities that can act on the new turn have their AP replenished.
+#[derive(Default, SystemDesc)]
+pub struct TurnSystem {
+    current: Turn,
+}
+
+impl TurnSystem {}
+
+impl<'s> System<'s> for TurnSystem {
+    type SystemData = (WriteStorage<'s, ActsOnTurns>, ReadStorage<'s, Player>);
+
+    fn run(&mut self, (mut actors, players): Self::SystemData) {
+        match self.current {
+            Turn::Player => {
+                if (&actors, &players).join().any(|(a, _)| a.can_act()) {
+                    return;
+                }
+                for (actor, _) in (&mut actors, !&players).join() {
+                    actor.refresh();
+                }
+                self.current = Turn::Others;
+            }
+            Turn::Others => {
+                if (&actors, !&players).join().any(|(a, _)| a.can_act()) {
+                    return;
+                }
+                for (actor, _) in (&mut actors, &players).join() {
+                    actor.refresh();
+                }
+                self.current = Turn::Player;
+            }
+        }
+    }
+}
+
+/// Resolves melee combat between units.
+///
+/// For each defending unit, the system computes the actual damage that the entity will suffer
+/// based on its defense and the attacker's power. Damage calculation is not performed right away,
+/// rather the unit is simply tagged with the total amount of damage that it should take.
+/// The [`DamageResolver`] handles the resolution of the damage itself.
 #[derive(SystemDesc)]
 pub struct MeleeCombatResolver;
 
@@ -45,6 +107,11 @@ impl<'s> System<'s> for MeleeCombatResolver {
     }
 }
 
+/// Applies damage points to the units suffering damage.
+///
+/// The system iterates over all the units with a pending [`SufferDamage`] component
+/// and subtracts the pending damage from their current HP. If a unit dies from the damage,
+/// its entity is killed and later deleted.
 #[derive(Default, SystemDesc)]
 pub struct DamageResolver;
 

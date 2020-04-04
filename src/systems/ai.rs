@@ -1,3 +1,5 @@
+//! This module contains all the AI-related systems.
+
 use crate::{
     components::*,
     map::{self, WorldMap},
@@ -9,6 +11,10 @@ use amethyst::{
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
 };
 
+/// Monster logic processing.
+///
+/// For each monster in the field, the system checks if any player unit is in its FoV
+/// and either chases it, or if it is in an adjacent tiles, tries to attack.
 #[derive(SystemDesc)]
 pub struct MonsterAI;
 
@@ -59,7 +65,7 @@ impl<'s> System<'s> for MonsterAI {
             for (target, &Faction(f2), &Position(p2)) in targets.join() {
                 // Skip not visibible and allies
                 if f1 == f2 || !vs.visible.contains(&p2) {
-                    break;
+                    continue;
                 }
 
                 // If in range, target for combat, otherwise move closer.
@@ -70,6 +76,9 @@ impl<'s> System<'s> for MonsterAI {
                         .insert(attacker, WantsToMove { to: path[1] })
                         .unwrap();
                 }
+
+                // Don't chase multiple units!
+                break;
             }
         }
     }
