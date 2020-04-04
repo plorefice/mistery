@@ -1,15 +1,9 @@
-use crate::{
-    components::*,
-    map::WorldMap,
-    renderer::WorldTileMap,
-    systems::{ai::*, combat::*, map::*, *},
-    utils,
-};
+use crate::{components::*, map::WorldMap, renderer::WorldTileMap, utils};
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector3, transform::Transform, ArcThreadPool, Hidden, Time},
-    ecs::{Dispatcher, DispatcherBuilder, Entity},
+    core::{math::Vector3, transform::Transform, Hidden, Time},
+    ecs::Entity,
     prelude::*,
     renderer::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
@@ -25,48 +19,12 @@ use amethyst::{
 pub struct TileDimension(pub f32);
 
 #[derive(Default)]
-pub struct GameState<'a, 'b> {
-    dispatcher: Option<Dispatcher<'a, 'b>>,
-
+pub struct GameState {
     fps_display: Option<Entity>,
 }
 
-impl<'a, 'b> SimpleState for GameState<'a, 'b> {
-    fn on_start(&mut self, data: StateData<'_, GameData>) {
-        let StateData { world, .. } = data;
-
-        // Create system dispatcher for the running state
-        let mut dispatcher = DispatcherBuilder::new()
-            .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
-            .with(MapIndexingSystem, "map_indexing", &[])
-            .with(VisibilitySystem, "visibility", &[])
-            .with(TurnSystem::default(), "turn", &[])
-            .with(
-                InputDispatcher::default(),
-                "player_movement",
-                &["visibility", "turn"],
-            )
-            .with(MonsterAI, "monster_ai", &["visibility", "turn"])
-            .with(
-                MoveResolver,
-                "move_resolver",
-                &["player_movement", "monster_ai", "map_indexing"],
-            )
-            .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
-            .with(DamageResolver, "damage_resolver", &["melee_resolver"])
-            .with(
-                PositionTranslator,
-                "position_translator",
-                &["move_resolver"],
-            )
-            .build();
-
-        // Attach the dispatchers to the world
-        dispatcher.setup(world);
-
-        // Store the dispatchers in the state
-        self.dispatcher = Some(dispatcher);
-
+impl SimpleState for GameState {
+    fn on_start(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
         let (screen_width, screen_height) = {
             let dim = world.read_resource::<ScreenDimensions>();
             (dim.width(), dim.height())
@@ -91,21 +49,13 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         self.create_fps_display(world);
     }
 
-    fn update(&mut self, data: &mut StateData<'_, GameData>) -> SimpleTrans {
-        let StateData { world, .. } = data;
-
-        // Dispatch game logic systems
-        if let Some(ref mut d) = self.dispatcher {
-            d.dispatch(&world);
-        }
-
+    fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> SimpleTrans {
         self.update_fps_display(world);
-
         Trans::None
     }
 }
 
-impl<'a, 'b> GameState<'a, 'b> {
+impl GameState {
     // Displays an FPS counter on the top left of the screen.
     fn create_fps_display(&mut self, world: &mut World) {
         let font = world.read_resource::<Loader>().load(
@@ -196,7 +146,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
     world
         .create_entity()
         .with(Player)
-        .with(Faction(0)) // 0 is the faction for friendlies
+        .with(Faction(0))
         .with(InputListener)
         .with(ActsOnTurns::default())
         .with(Position(pos))
@@ -235,7 +185,7 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
 
         world
             .create_entity()
-            .with(Faction(1)) // 1 is the faction for enemies
+            .with(Faction(1))
             .with(ActsOnTurns::default())
             .with(Position(spawn_point))
             .with(BlocksTile)

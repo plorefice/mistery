@@ -10,6 +10,7 @@ mod utils;
 use game::GameState;
 use input::GameBindings;
 use renderer::*;
+use systems::{ai::*, combat::*, map::*, *};
 
 use amethyst::{
     core::transform::TransformBundle,
@@ -53,7 +54,29 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default())
                 .with_plugin(RenderTiles2D::<WorldTile, MortonEncoder>::default()),
-        )?;
+        )?
+        // Game logic
+        .with(MapIndexingSystem, "map_indexing", &[])
+        .with(VisibilitySystem, "visibility", &[])
+        .with(TurnSystem::default(), "turn", &[])
+        .with(
+            InputDispatcher::default(),
+            "player_movement",
+            &["visibility", "turn"],
+        )
+        .with(MonsterAI, "monster_ai", &["visibility", "turn"])
+        .with(
+            MoveResolver,
+            "move_resolver",
+            &["player_movement", "monster_ai", "map_indexing"],
+        )
+        .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
+        .with(DamageResolver, "damage_resolver", &["melee_resolver"])
+        .with(
+            PositionTranslator,
+            "position_translator",
+            &["move_resolver"],
+        );
 
     let mut game = Application::new(assets_dir, GameState::default(), game_data)?;
     game.run();
