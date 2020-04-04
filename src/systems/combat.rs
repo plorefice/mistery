@@ -51,18 +51,21 @@ pub struct DamageResolver;
 impl<'s> System<'s> for DamageResolver {
     type SystemData = (
         Entities<'s>,
+        ReadStorage<'s, Name>,
         WriteStorage<'s, SuffersDamage>,
         WriteStorage<'s, CombatStats>,
+        Write<'s, CombatLog>,
     );
 
-    fn run(&mut self, (entities, mut damages, mut combat_stats): Self::SystemData) {
-        let damageds = (&entities, damages.drain(), &mut combat_stats);
+    fn run(&mut self, (entities, names, mut damages, mut combat_stats, mut log): Self::SystemData) {
+        let damageds = (&entities, &names, damages.drain(), &mut combat_stats);
 
-        for (e, SuffersDamage { damage }, stats) in damageds.join() {
+        for (e, Name(name), SuffersDamage { damage }, ref mut stats) in damageds.join() {
             stats.hp -= damage as i32;
 
             // If an entity drops below 0 HP, it dies
             if stats.hp <= 0 {
+                log.push(format!("{} is dead.", name));
                 entities.delete(e).unwrap();
             }
         }

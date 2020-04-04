@@ -57,7 +57,7 @@ Container(
                         x: 220.,
                         width: 1120.,
                     ),
-                    background: SolidColor(0.0, 0.0, 0.0, 1.0),
+                    background: SolidColor(0.1, 0.0, 0.0, 1.0),
                     children: [
                         Container(
                             transform: (
@@ -67,7 +67,7 @@ Container(
                                 stretch: Y(y_margin: 0.),
                                 width: 1120.,
                             ),
-                            background: SolidColor(1.0, 0.0, 0.0, 1.0),
+                            background: SolidColor(0.7, 0.0, 0.0, 1.0),
                             children: [],
                         ),
                     ],
