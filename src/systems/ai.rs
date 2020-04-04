@@ -13,6 +13,7 @@ use amethyst::{
 pub struct MonsterAI;
 
 impl<'s> System<'s> for MonsterAI {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Player>,
@@ -39,9 +40,9 @@ impl<'s> System<'s> for MonsterAI {
                 }
 
                 // If in range, target for combat, otherwise move closer.
-                if math::distance_2d(&p1, &p2) == 1 {
+                if math::distance_2d(p1, p2) == 1 {
                     TargetedForMelee::target(&mut melee_targets, attacker, target);
-                } else if let Some(path) = map::a_star_search(&*map, &p1, &p2) {
+                } else if let Some(path) = map::a_star_search(&*map, p1, p2) {
                     movers
                         .insert(attacker, WantsToMove { to: path[1] })
                         .unwrap();

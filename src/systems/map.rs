@@ -25,8 +25,8 @@ impl<'s> System<'s> for MapIndexingSystem {
     fn run(&mut self, (positions, blockers, mut map): Self::SystemData) {
         // Recompute blocked tiles at the end of a turn
         map.reload_blocked_tiles();
-        for (_, Position(ref p)) in (&blockers, &positions).join() {
-            map.blocked_mut(p).and_then(|b| Some(*b = true));
+        for (_, &Position(p)) in (&blockers, &positions).join() {
+            *map.blocked_mut(p).unwrap() = true;
         }
     }
 }
@@ -36,6 +36,7 @@ impl<'s> System<'s> for MapIndexingSystem {
 pub struct VisibilitySystem;
 
 impl<'s> System<'s> for VisibilitySystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Player>,
@@ -60,8 +61,8 @@ impl<'s> System<'s> for VisibilitySystem {
                     // First, reveal the visible tiles on the map
                     map.clear_visibility();
                     for pt in &vs.visible {
-                        map.revealed_mut(pt).and_then(|rev| Some(*rev = true));
-                        map.visible_mut(pt).and_then(|viz| Some(*viz = true));
+                        *map.revealed_mut(*pt).unwrap() = true;
+                        *map.visible_mut(*pt).unwrap() = true;
                     }
 
                     // For renderable entities, hide those that are not in view
@@ -96,8 +97,8 @@ impl MoveResolver {
     ) {
         // Move the blocked tile, if the entity is blocking
         if blocks {
-            map.blocked_mut(from).and_then(|b| Some(*b = false));
-            map.blocked_mut(&to).and_then(|b| Some(*b = true));
+            *map.blocked_mut(*from).unwrap() = false;
+            *map.blocked_mut(to).unwrap() = true;
         }
 
         *from = to;
@@ -105,6 +106,7 @@ impl MoveResolver {
 }
 
 impl<'s> System<'s> for MoveResolver {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Player>,
@@ -136,7 +138,7 @@ impl<'s> System<'s> for MoveResolver {
         ): Self::SystemData,
     ) {
         for (e1, WantsToMove { to }) in (&entitites, movers.drain()).join() {
-            match map.blocked(&to) {
+            match map.blocked(to) {
                 Some(&false) => {
                     if let Some(Position(p)) = positions.get_mut(e1) {
                         self.move_entity(e1, &mut map, p, to, blockers.contains(e1)); // update map state

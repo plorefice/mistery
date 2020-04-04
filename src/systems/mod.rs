@@ -30,6 +30,7 @@ impl InputDispatcher {
 }
 
 impl<'s> System<'s> for InputDispatcher {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, InputListener>,

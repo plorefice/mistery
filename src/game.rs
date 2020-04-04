@@ -97,7 +97,7 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
 
         // Initialize all the game-related entities
         spawn_player(world, sprite_sheet.clone());
-        spawn_monsters(world, sprite_sheet.clone());
+        spawn_monsters(world, sprite_sheet);
 
         // Utilities
         self.create_fps_display(world);

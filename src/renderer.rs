@@ -24,15 +24,15 @@ struct WorldTileState {
 pub struct WorldTile;
 
 impl WorldTile {
-    fn get(&self, coordinates: Point3<u32>, world: &World) -> Option<WorldTileState> {
+    fn get(self, coordinates: Point3<u32>, world: &World) -> Option<WorldTileState> {
         let map = world.read_resource::<WorldMap>();
 
         // `Tile` coordinates grow right-down, while everything else in Amethyst
         // grows right-up, so the Y coordinate needs to be flipped before getting the tile.
         let p = Point::new(coordinates[0], map.height() - coordinates[1] - 1);
 
-        map.revealed(&p)
-            .and_then(|revealed| match (revealed, map.get(&p), map.visible(&p)) {
+        map.revealed(p)
+            .and_then(|revealed| match (revealed, map.get(p), map.visible(p)) {
                 (true, Some(kind), Some(&visible)) => Some(WorldTileState { kind, visible }),
                 _ => None,
             })

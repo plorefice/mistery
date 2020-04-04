@@ -17,7 +17,7 @@ impl Default for TileKind {
 
 impl TileKind {
     /// Returns whether a player can walk on this tile.
-    pub fn is_walkable(&self) -> bool {
+    pub fn is_walkable(self) -> bool {
         match self {
             TileKind::Wall => false,
             TileKind::Floor => true,
@@ -25,7 +25,7 @@ impl TileKind {
     }
 
     /// Returns whether an entity can see through this tile.
-    pub fn is_solid(&self) -> bool {
+    pub fn is_solid(self) -> bool {
         match self {
             TileKind::Wall => true,
             TileKind::Floor => false,
@@ -56,13 +56,11 @@ impl WorldMap {
         const MIN_SIZE: u32 = 7;
         const MAX_SIZE: u32 = 12;
 
-        let n = (width * height) as usize;
-
         let mut map = WorldMap {
             width,
             height,
             rooms: Vec::with_capacity(MAX_ROOMS),
-            tiles: vec![TileState::default(); n],
+            tiles: vec![TileState::default(); (width * height) as usize],
         };
 
         let mut rng = rand::thread_rng();
@@ -73,14 +71,14 @@ impl WorldMap {
             let x = rng.gen_range(1, width - w - 1);
             let y = rng.gen_range(1, height - h - 1);
 
-            let r = Rect::new(x, y, w, h);
+            let room = Rect::new(x, y, w, h);
 
-            if !map.rooms.iter().any(|r2| r.intersects(r2)) {
-                map.create_room(&r);
+            if !map.rooms.iter().any(|other| room.intersects(other)) {
+                map.create_room(&room);
 
                 if let Some(rp) = map.rooms.last() {
                     let (x1, y1) = (rp.center()[0], rp.center()[1]);
-                    let (x2, y2) = (r.center()[0], r.center()[1]);
+                    let (x2, y2) = (room.center()[0], room.center()[1]);
 
                     if rng.gen::<bool>() {
                         map.create_horizontal_corridor(x1, x2, y1);
@@ -91,7 +89,7 @@ impl WorldMap {
                     }
                 }
 
-                map.rooms.push(r);
+                map.rooms.push(room);
             }
         }
 
@@ -111,39 +109,39 @@ impl WorldMap {
     }
 
     /// Returns the tile at the given point, if present.
-    pub fn get(&self, p: &Point) -> Option<TileKind> {
+    pub fn get(&self, p: Point) -> Option<TileKind> {
         self.tiles.get(self.pt_to_idx(p)).map(|t| t.kind)
     }
 
     /// Returns whether the tile at the given point has been revealed, if present.
-    pub fn revealed(&self, p: &Point) -> Option<&bool> {
+    pub fn revealed(&self, p: Point) -> Option<&bool> {
         self.tiles.get(self.pt_to_idx(p)).map(|t| &t.revealed)
     }
 
     /// Gets a tile's revealed state mutably.
-    pub fn revealed_mut(&mut self, p: &Point) -> Option<&mut bool> {
+    pub fn revealed_mut(&mut self, p: Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
         self.tiles.get_mut(idx).map(|t| &mut t.revealed)
     }
 
     /// Returns whether the tile at the given point is currently visible, if present.
-    pub fn visible(&self, p: &Point) -> Option<&bool> {
+    pub fn visible(&self, p: Point) -> Option<&bool> {
         self.tiles.get(self.pt_to_idx(p)).map(|t| &t.visible)
     }
 
     /// Gets a tile's visibility state mutably.
-    pub fn visible_mut(&mut self, p: &Point) -> Option<&mut bool> {
+    pub fn visible_mut(&mut self, p: Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
         self.tiles.get_mut(idx).map(|t| &mut t.visible)
     }
 
     /// Returns whether the tile at the given point is currently blocked, if present.
-    pub fn blocked(&self, p: &Point) -> Option<&bool> {
+    pub fn blocked(&self, p: Point) -> Option<&bool> {
         self.tiles.get(self.pt_to_idx(p)).map(|t| &t.blocked)
     }
 
     /// Gets a tile's blocked state mutably.
-    pub fn blocked_mut(&mut self, p: &Point) -> Option<&mut bool> {
+    pub fn blocked_mut(&mut self, p: Point) -> Option<&mut bool> {
         let idx = self.pt_to_idx(p);
         self.tiles.get_mut(idx).map(|t| &mut t.blocked)
     }
@@ -165,7 +163,7 @@ impl WorldMap {
     /// Computes all the walkable adjacent positions.
     ///
     /// Adjacency is computed on both cardinal intercardinal points.
-    pub fn get_adjacent_exits(&self, p: &Point) -> Vec<Point> {
+    pub fn get_adjacent_exits(&self, p: Point) -> Vec<Point> {
         // Note: this order affects the paths returned by the A* algorithm.
         // Keep the cardinal positions first, to avoid glitchy side movements.
         [
@@ -181,7 +179,7 @@ impl WorldMap {
         .iter()
         .filter_map(|&delta| {
             let p = p.translate(delta.0, delta.1);
-            if let Some(false) = self.blocked(&p) {
+            if let Some(false) = self.blocked(p) {
                 return Some(p);
             }
             None
@@ -198,7 +196,7 @@ impl WorldMap {
         (y * self.width + x) as usize
     }
 
-    fn pt_to_idx(&self, p: &Point) -> usize {
+    fn pt_to_idx(&self, p: Point) -> usize {
         (p.y() * self.width + p.x()) as usize
     }
 
@@ -319,8 +317,8 @@ impl<'a> ShadowcastFoV<'a> {
                 if blocked {
                     if self
                         .map
-                        .get(&(ax as u32, ay as u32).into())
-                        .and_then(|t| Some(t.is_solid()))
+                        .get((ax as u32, ay as u32).into())
+                        .map(|t| t.is_solid())
                         .unwrap_or(true)
                     {
                         next_start_slope = r_slope;
@@ -331,8 +329,8 @@ impl<'a> ShadowcastFoV<'a> {
                     }
                 } else if self
                     .map
-                    .get(&(ax as u32, ay as u32).into())
-                    .and_then(|t| Some(t.is_solid()))
+                    .get((ax as u32, ay as u32).into())
+                    .map(|t| t.is_solid())
                     .unwrap_or(true)
                 {
                     blocked = true;
@@ -347,21 +345,21 @@ impl<'a> ShadowcastFoV<'a> {
 /// Computes a path between two points on the map, if it exists.
 ///
 /// The resulting path contains the start and end points as first and last elements.
-pub fn a_star_search(map: &WorldMap, start: &Point, end: &Point) -> Option<Vec<Point>> {
+pub fn a_star_search(map: &WorldMap, start: Point, end: Point) -> Option<Vec<Point>> {
     pathfinding::prelude::astar(
-        start,
-        |pt| {
+        &start,
+        |&pt| {
             // Workaround to allow pathfinding to end up on a blocked tile
             if math::distance_2d(pt, end) == 1 {
-                vec![*end]
+                vec![end]
             } else {
                 map.get_adjacent_exits(pt)
             }
             .into_iter()
             .zip(iter::repeat(1))
         },
-        |pt| math::distance_2d(pt, end),
-        |pt| pt == end,
+        |&pt| math::distance_2d(pt, end),
+        |&pt| pt == end,
     )
     .map(|(path, _)| path)
 }

@@ -19,12 +19,12 @@ impl Point {
     }
 
     /// Returns the first coordinate of the point.
-    pub fn x(&self) -> u32 {
+    pub fn x(self) -> u32 {
         self.0[0]
     }
 
     /// Returns the second coordinate of the point.
-    pub fn y(&self) -> u32 {
+    pub fn y(self) -> u32 {
         self.0[1]
     }
 
@@ -33,7 +33,7 @@ impl Point {
     /// # Panics
     ///
     /// Panics if shifting either coordinate results in a negative number.
-    pub fn translate(&self, x: i32, y: i32) -> Point {
+    pub fn translate(self, x: i32, y: i32) -> Point {
         assert!((self.x() as i32 + x) >= 0);
         assert!((self.y() as i32 + y) >= 0);
 
