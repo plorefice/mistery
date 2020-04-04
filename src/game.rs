@@ -2,12 +2,7 @@ use crate::{
     components::*,
     map::WorldMap,
     renderer::WorldTileMap,
-    systems::{
-        ai::MonsterAI,
-        combat::CombatResolver,
-        map::{MoveResolver, VisibilitySystem},
-        InputDispatcher, PositionTranslator,
-    },
+    systems::{ai::*, combat::*, map::*, *},
     utils,
 };
 
@@ -59,7 +54,8 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
             .with(VisibilitySystem, "visibility", &[])
             .with(MonsterAI, "monster_ai", &["visibility"])
             .with(MoveResolver, "move_resolver", &["monster_ai"])
-            .with(CombatResolver, "combat_resolver", &["move_resolver"])
+            .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
+            .with(DamageResolver, "damage_resolver", &["melee_resolver"])
             .with_barrier()
             .with(PositionTranslator, "position_translator", &[])
             .build();
@@ -67,7 +63,12 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         // Create system dispatcher for the paused state
         let mut paused_dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
-            .with(InputDispatcher::default(), "player_movement", &[])
+            .with(MapIndexingSystem, "map_indexing", &[])
+            .with(
+                InputDispatcher::default(),
+                "player_movement",
+                &["map_indexing"],
+            )
             .build();
 
         // Attach the dispatchers to the world

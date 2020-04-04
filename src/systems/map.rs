@@ -11,6 +11,26 @@ use amethyst::{
     renderer::SpriteRender,
 };
 
+/// Refreshes the map's internal index.
+#[derive(Default, SystemDesc)]
+pub struct MapIndexingSystem;
+
+impl<'s> System<'s> for MapIndexingSystem {
+    type SystemData = (
+        ReadStorage<'s, Position>,
+        ReadStorage<'s, BlocksTile>,
+        Write<'s, WorldMap>,
+    );
+
+    fn run(&mut self, (positions, blockers, mut map): Self::SystemData) {
+        // Recompute blocked tiles at the end of a turn
+        map.reload_blocked_tiles();
+        for (_, Position(ref p)) in (&blockers, &positions).join() {
+            map.blocked_mut(p).and_then(|b| Some(*b = true));
+        }
+    }
+}
+
 /// System that manages and updates Viewshed components.
 #[derive(Default, SystemDesc)]
 pub struct VisibilitySystem;

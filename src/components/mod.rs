@@ -77,3 +77,20 @@ impl TargetedForMelee {
             .push(attacker);
     }
 }
+
+/// Component for entities that have to suffer an amout of damage.
+#[derive(Default, Debug, Component)]
+pub struct SuffersDamage {
+    pub damage: u32,
+}
+
+impl SuffersDamage {
+    /// Adds some damage to the total suffered by an entity.
+    pub fn damage(store: &mut WriteStorage<SuffersDamage>, who: Entity, amount: u32) {
+        store
+            .entry(who)
+            .unwrap()
+            .or_insert(SuffersDamage::default())
+            .damage += amount;
+    }
+}
