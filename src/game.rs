@@ -7,13 +7,13 @@ use amethyst::{
         transform::{Parent, Transform},
         Hidden,
     },
-    ecs::Entity,
+    ecs::{Entity, Join},
     prelude::*,
     renderer::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
         SpriteSheetFormat, Texture,
     },
-    ui::{UiCreator, UiFinder, UiText},
+    ui::{UiCreator, UiFinder, UiText, UiTransform},
     utils::fps_counter::FpsCounter,
     window::ScreenDimensions,
 };
@@ -92,6 +92,44 @@ impl SimpleState for GameState {
 impl GameState {
     // Updates the infobox to reflect the current game state.
     fn update_infobox(&mut self, world: &mut World) {
+        self.update_hp_display(world);
+        self.update_combat_log(world);
+    }
+
+    // Update the HP text and bar in the infobox.
+    fn update_hp_display(&mut self, world: &mut World) {
+        let hp_text = self.get_ui_element("hp-text", world);
+        let hp_slot = self.get_ui_element("hp-slot", world);
+        let hp_bar = self.get_ui_element("hp-bar", world);
+
+        if let (Some(hp_text), Some(hp_slot), Some(hp_bar)) = (hp_text, hp_slot, hp_bar) {
+            let players = world.read_storage::<Player>();
+            let stats = world.read_storage::<CombatStats>();
+
+            let mut ui_text = world.write_storage::<UiText>();
+            let mut ui_transform = world.write_storage::<UiTransform>();
+
+            if let Some((_, stats)) = (&players, &stats).join().next() {
+                if let Some(hp) = ui_text.get_mut(hp_text) {
+                    hp.text = format!("HP: {} / {}", stats.hp, stats.max_hp);
+                }
+
+                let ratio = stats.hp as f32 / stats.max_hp as f32;
+                let width = if let Some(hp_slot) = ui_transform.get_mut(hp_slot) {
+                    hp_slot.width
+                } else {
+                    return;
+                };
+
+                if let Some(hp_bar) = ui_transform.get_mut(hp_bar) {
+                    hp_bar.width = width * ratio;
+                }
+            }
+        }
+    }
+
+    // Update the combat log to show the most recent messages.
+    fn update_combat_log(&mut self, world: &mut World) {
         if let Some(ui_log) = self.get_ui_element("combat-log", world) {
             let mut ui_text = world.write_storage::<UiText>();
             if let Some(ui_log) = ui_text.get_mut(ui_log) {
