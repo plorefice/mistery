@@ -7,6 +7,31 @@ use std::collections::HashSet;
 #[derive(Default, Copy, Clone, Debug, Component)]
 pub struct Player;
 
+/// Tag component for entities that can act in a turn.
+#[derive(Default, Copy, Clone, Debug, Component)]
+pub struct ActsOnTurns {
+    ap: u32,
+}
+
+impl ActsOnTurns {
+    pub fn can_act(self) -> bool {
+        self.ap > 0
+    }
+
+    pub fn refresh(&mut self) {
+        self.ap = 1;
+    }
+
+    pub fn perform(&mut self) -> bool {
+        if self.can_act() {
+            self.ap -= 1;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 /// Tag component for an entity belonging to a faction.
 #[derive(Default, Copy, Clone, Debug, PartialEq, Component)]
 pub struct Faction(pub u32);

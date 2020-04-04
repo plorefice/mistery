@@ -20,6 +20,7 @@ impl<'s> System<'s> for MonsterAI {
         ReadStorage<'s, Faction>,
         ReadStorage<'s, Position>,
         ReadStorage<'s, Viewshed>,
+        WriteStorage<'s, ActsOnTurns>,
         WriteStorage<'s, WantsToMove>,
         WriteStorage<'s, TargetedForMelee>,
         Read<'s, WorldMap>,
@@ -27,13 +28,35 @@ impl<'s> System<'s> for MonsterAI {
 
     fn run(
         &mut self,
-        (entities, players, factions, positions, viewsheds, mut movers, mut melee_targets, map): Self::SystemData,
+        (
+            entities,
+            players,
+            factions,
+            positions,
+            viewsheds,
+            mut actors,
+            mut movers,
+            mut melee_targets,
+            map,
+        ): Self::SystemData,
     ) {
-        let attackers = (&entities, !&players, &factions, &viewsheds, &positions);
+        let attackers = (
+            &entities,
+            &mut actors,
+            &factions,
+            &viewsheds,
+            &positions,
+            !&players,
+        );
+
         let targets = (&entities, &factions, &positions);
 
-        for (attacker, _, Faction(f1), vs, &Position(p1)) in attackers.join() {
-            for (target, Faction(f2), &Position(p2)) in targets.join() {
+        for (attacker, actor, &Faction(f1), vs, &Position(p1), _) in attackers.join() {
+            if !actor.perform() {
+                continue;
+            }
+
+            for (target, &Faction(f2), &Position(p2)) in targets.join() {
                 // Skip not visibible and allies
                 if f1 == f2 || !vs.visible.contains(&p2) {
                     break;

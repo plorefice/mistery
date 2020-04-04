@@ -24,22 +24,9 @@ use amethyst::{
 #[derive(Default)]
 pub struct TileDimension(pub f32);
 
-#[derive(Copy, Clone, PartialEq)]
-pub enum RunState {
-    Running,
-    Paused,
-}
-
-impl Default for RunState {
-    fn default() -> Self {
-        RunState::Running
-    }
-}
-
 #[derive(Default)]
 pub struct GameState<'a, 'b> {
-    running_dispatcher: Option<Dispatcher<'a, 'b>>,
-    paused_dispatcher: Option<Dispatcher<'a, 'b>>,
+    dispatcher: Option<Dispatcher<'a, 'b>>,
 
     fps_display: Option<Entity>,
 }
@@ -49,35 +36,36 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
         let StateData { world, .. } = data;
 
         // Create system dispatcher for the running state
-        let mut running_dispatcher = DispatcherBuilder::new()
-            .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
-            .with(VisibilitySystem, "visibility", &[])
-            .with(MonsterAI, "monster_ai", &["visibility"])
-            .with(MoveResolver, "move_resolver", &["monster_ai"])
-            .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
-            .with(DamageResolver, "damage_resolver", &["melee_resolver"])
-            .with_barrier()
-            .with(PositionTranslator, "position_translator", &[])
-            .build();
-
-        // Create system dispatcher for the paused state
-        let mut paused_dispatcher = DispatcherBuilder::new()
+        let mut dispatcher = DispatcherBuilder::new()
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
             .with(MapIndexingSystem, "map_indexing", &[])
+            .with(VisibilitySystem, "visibility", &[])
+            .with(TurnSystem::default(), "turn", &[])
             .with(
                 InputDispatcher::default(),
                 "player_movement",
-                &["map_indexing"],
+                &["visibility", "turn"],
+            )
+            .with(MonsterAI, "monster_ai", &["visibility", "turn"])
+            .with(
+                MoveResolver,
+                "move_resolver",
+                &["player_movement", "monster_ai", "map_indexing"],
+            )
+            .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
+            .with(DamageResolver, "damage_resolver", &["melee_resolver"])
+            .with(
+                PositionTranslator,
+                "position_translator",
+                &["move_resolver"],
             )
             .build();
 
         // Attach the dispatchers to the world
-        running_dispatcher.setup(world);
-        paused_dispatcher.setup(world);
+        dispatcher.setup(world);
 
         // Store the dispatchers in the state
-        self.running_dispatcher = Some(running_dispatcher);
-        self.paused_dispatcher = Some(paused_dispatcher);
+        self.dispatcher = Some(dispatcher);
 
         let (screen_width, screen_height) = {
             let dim = world.read_resource::<ScreenDimensions>();
@@ -106,21 +94,9 @@ impl<'a, 'b> SimpleState for GameState<'a, 'b> {
     fn update(&mut self, data: &mut StateData<'_, GameData>) -> SimpleTrans {
         let StateData { world, .. } = data;
 
-        let run_state = *world.read_resource::<RunState>();
-        match run_state {
-            RunState::Running => {
-                // Dispatch game logic systems
-                if let Some(ref mut d) = self.running_dispatcher {
-                    d.dispatch(&world);
-                    *world.write_resource() = RunState::Paused;
-                }
-            }
-            RunState::Paused => {
-                // Dispatch input handling systems
-                if let Some(ref mut d) = self.paused_dispatcher {
-                    d.dispatch(&world);
-                }
-            }
+        // Dispatch game logic systems
+        if let Some(ref mut d) = self.dispatcher {
+            d.dispatch(&world);
         }
 
         self.update_fps_display(world);
@@ -222,6 +198,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
         .with(Player)
         .with(Faction(0)) // 0 is the faction for friendlies
         .with(InputListener)
+        .with(ActsOnTurns::default())
         .with(Position(pos))
         .with(BlocksTile)
         .with(Viewshed::new(8))
@@ -259,6 +236,7 @@ fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
         world
             .create_entity()
             .with(Faction(1)) // 1 is the faction for enemies
+            .with(ActsOnTurns::default())
             .with(Position(spawn_point))
             .with(BlocksTile)
             .with(Viewshed::new(8))

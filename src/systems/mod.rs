@@ -3,19 +3,67 @@ pub mod combat;
 pub mod map;
 
 use crate::{
-    components::{InputListener, Position, WantsToMove},
-    game::{RunState, TileDimension},
+    components::{ActsOnTurns, InputListener, Player, Position, WantsToMove},
+    game::TileDimension,
     input::{ActionBinding, GameBindings},
 };
 
 use amethyst::{
     core::transform::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
     input::InputHandler,
 };
 
 use std::collections::HashSet;
+
+/// Enum representing one of the possible turns in the state logic.
+#[derive(Copy, Clone, PartialEq)]
+pub enum Turn {
+    Player,
+    Others,
+}
+
+impl Default for Turn {
+    fn default() -> Self {
+        Turn::Player
+    }
+}
+
+/// System that manages which entities get to act in the current turn.
+#[derive(Default, SystemDesc)]
+pub struct TurnSystem {
+    current: Turn,
+}
+
+impl TurnSystem {}
+
+impl<'s> System<'s> for TurnSystem {
+    type SystemData = (WriteStorage<'s, ActsOnTurns>, ReadStorage<'s, Player>);
+
+    fn run(&mut self, (mut actors, players): Self::SystemData) {
+        match self.current {
+            Turn::Player => {
+                if (&actors, &players).join().any(|(a, _)| a.can_act()) {
+                    return;
+                }
+                for (actor, _) in (&mut actors, !&players).join() {
+                    actor.refresh();
+                }
+                self.current = Turn::Others;
+            }
+            Turn::Others => {
+                if (&actors, !&players).join().any(|(a, _)| a.can_act()) {
+                    return;
+                }
+                for (actor, _) in (&mut actors, &players).join() {
+                    actor.refresh();
+                }
+                self.current = Turn::Player;
+            }
+        }
+    }
+}
 
 /// System for input handling and dispatching.
 #[derive(Default, SystemDesc)]
@@ -35,14 +83,14 @@ impl<'s> System<'s> for InputDispatcher {
         Entities<'s>,
         ReadStorage<'s, InputListener>,
         ReadStorage<'s, Position>,
+        WriteStorage<'s, ActsOnTurns>,
         WriteStorage<'s, WantsToMove>,
         Read<'s, InputHandler<GameBindings>>,
-        Write<'s, RunState>,
     );
 
     fn run(
         &mut self,
-        (entities, listeners, positions, mut movers, input, mut run_state): Self::SystemData,
+        (entities, listeners, positions, mut actors, mut movers, input): Self::SystemData,
     ) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
@@ -53,7 +101,7 @@ impl<'s> System<'s> for InputDispatcher {
             .filter(|a| input.action_is_down(a).unwrap_or_default())
             .collect();
 
-        for (e, _, &Position(p)) in (&entities, &listeners, &positions).join() {
+        for (e, _, &Position(p), actor) in (&entities, &listeners, &positions, &mut actors).join() {
             let mut to = p;
 
             for action in pressed.iter().filter(|a| !self.was_pressed(a)) {
@@ -81,9 +129,8 @@ impl<'s> System<'s> for InputDispatcher {
                 }
             }
 
-            if to != p {
+            if to != p && actor.perform() {
                 movers.insert(e, WantsToMove { to }).unwrap();
-                *run_state = RunState::Running; // un-pause game logic
             }
         }
 
