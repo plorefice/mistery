@@ -1,0 +1,100 @@
+#![enable(implicit_some)]
+Container(
+    transform: (
+        id: "infobox",
+        anchor: BottomMiddle,
+        pivot: BottomMiddle,
+        stretch: X(x_margin: 0.),
+        width: 0.,
+        height: 140.,
+    ),
+    background: NineSlice(
+        x_start: 0,
+        y_start: 0,
+        width: 60,
+        height: 60,
+        left_dist: 20,
+        right_dist: 20,
+        top_dist: 20,
+        bottom_dist: 20,
+        tex: File("texture/box-border.png", ("IMAGE", ())),
+        texture_dimensions: (60, 60),
+    ),
+    children: [
+        Container(
+            transform: (
+                id: "hp",
+                anchor: TopLeft,
+                pivot: TopLeft,
+                x: 240.,
+                width: 1340.,
+                height: 26.,
+            ),
+            background: SolidColor(0.0, 0.0, 0.0, 1.0),
+            children: [
+                Label(
+                    transform: (
+                        id: "hp-text",
+                        anchor: MiddleLeft,
+                        pivot: MiddleLeft,
+                        stretch: Y(y_margin: 0.),
+                        x: 10.,
+                        width: 200.,
+                    ),
+                    text: (
+                        text: "HP: ?? / ??",
+                        font: File("font/PxPlus_IBM_EGA8.ttf", ("TTF", ())),
+                        font_size: 30.,
+                        color: (0.7, 0.5, 0.0, 1.0),
+                    ),
+                ),
+                Container(
+                    transform: (
+                        id: "hp-slot",
+                        anchor: MiddleLeft,
+                        pivot: MiddleLeft,
+                        stretch: Y(y_margin: 0.),
+                        x: 220.,
+                        width: 1120.,
+                    ),
+                    background: SolidColor(0.0, 0.0, 0.0, 1.0),
+                    children: [
+                        Container(
+                            transform: (
+                                id: "hp-bar",
+                                anchor: MiddleLeft,
+                                pivot: MiddleLeft,
+                                stretch: Y(y_margin: 0.),
+                                width: 1120.,
+                            ),
+                            background: SolidColor(1.0, 0.0, 0.0, 1.0),
+                            children: [],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        Container(
+            transform: (
+                id: "combat-log",
+                stretch: XY(x_margin: 26., y_margin: 26., keep_aspect_ratio: false)
+            ),
+            background: SolidColor(0.0, 0.0, 0.0, 1.0),
+            children: [
+                Label(
+                    transform: (
+                        stretch: XY(x_margin: 0., y_margin: 0., keep_aspect_ratio: false),
+                    ),
+                    text: (
+                        text: "Welcome to Mistery!",
+                        align: BottomLeft,
+                        line_mode: Wrap,
+                        font: File("font/PxPlus_IBM_EGA8.ttf", ("TTF", ())),
+                        font_size: 30.,
+                        color: (1.0, 1.0, 1.0, 1.0),
+                    ),
+                ),
+            ],
+        ),
+    ],
+)

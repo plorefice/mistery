@@ -13,7 +13,7 @@ use amethyst::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
         SpriteSheetFormat, Texture,
     },
-    ui::{Anchor, TtfFormat, UiText, UiTransform},
+    ui::{Anchor, TtfFormat, UiCreator, UiText, UiTransform},
     utils::fps_counter::FpsCounter,
     window::ScreenDimensions,
 };
@@ -53,6 +53,11 @@ impl SimpleState for GameState {
 
         // Utilities
         self.create_fps_display(world);
+
+        // Draw UI
+        world.exec(|mut creator: UiCreator<'_>| {
+            creator.create("ui/infobox.ron", ());
+        });
     }
 
     fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> SimpleTrans {
