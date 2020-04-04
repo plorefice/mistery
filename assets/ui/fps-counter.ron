@@ -1,0 +1,18 @@
+#![enable(implicit_some)]
+Label(
+    transform: (
+        id: "fps-counter",
+        anchor: TopLeft,
+        pivot: TopLeft,
+        x: 10.0,
+        y: -10.0,
+        width: 50.,
+        height: 30.,
+    ),
+    text: (
+        text: "00",
+        font: File("font/PxPlus_IBM_EGA8.ttf", ("TTF", ())),
+        font_size: 30.,
+        color: (0.7, 0.5, 0.0, 1.0),
+    ),
+)

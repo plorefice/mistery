@@ -5,7 +5,7 @@ use amethyst::{
     core::{
         math::Vector3,
         transform::{Parent, Transform},
-        Hidden, Time,
+        Hidden,
     },
     ecs::Entity,
     prelude::*,
@@ -13,7 +13,7 @@ use amethyst::{
         palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
         SpriteSheetFormat, Texture,
     },
-    ui::{Anchor, TtfFormat, UiCreator, UiText, UiTransform},
+    ui::{UiCreator, UiFinder, UiText},
     utils::fps_counter::FpsCounter,
     window::ScreenDimensions,
 };
@@ -40,8 +40,7 @@ impl SimpleState for GameState {
         // Create required resources
         world.insert(TileDimension(20.0));
 
-        // Initialize world map
-        // IMPORTANT: map initialization *must* come before everything else
+        // Initialize world map (*must* come before everything else)
         create_map(world, 80, 50, sprite_sheet.clone());
 
         // Initialize all the game-related entities
@@ -51,11 +50,9 @@ impl SimpleState for GameState {
         // Attach a camera to the player
         create_camera(world, player, screen_width, screen_height);
 
-        // Utilities
-        self.create_fps_display(world);
-
         // Draw UI
         world.exec(|mut creator: UiCreator<'_>| {
+            creator.create("ui/fps-counter.ron", ());
             creator.create("ui/infobox.ron", ());
         });
     }
@@ -67,48 +64,23 @@ impl SimpleState for GameState {
 }
 
 impl GameState {
-    // Displays an FPS counter on the top left of the screen.
-    fn create_fps_display(&mut self, world: &mut World) {
-        let font = world.read_resource::<Loader>().load(
-            "font/PxPlus_IBM_EGA8.ttf",
-            TtfFormat,
-            (),
-            &world.read_resource(),
-        );
-
-        let transform = UiTransform::new(
-            "fps".to_string(),
-            Anchor::TopLeft,
-            Anchor::TopLeft,
-            10.0,
-            -20.0,
-            0.5,
-            50.,
-            30.,
-        );
-
-        self.fps_display = Some(
-            world
-                .create_entity()
-                .with(transform)
-                .with(UiText::new(
-                    font,
-                    "--".to_string(),
-                    [0.8, 0.8, 0.0, 1.0],
-                    32.,
-                ))
-                .build(),
-        );
-    }
-
     // Updates the FPS counter with the measured FPS.
     fn update_fps_display(&mut self, world: &mut World) {
+        // Find counter entity if this is the first time this function is called
+        if self.fps_display.is_none() {
+            world.exec(|finder: UiFinder<'_>| {
+                if let Some(entity) = finder.find("fps-counter") {
+                    self.fps_display = Some(entity);
+                }
+            });
+        }
+
         let mut ui_text = world.write_storage::<UiText>();
         if let Some(display) = self.fps_display.and_then(|e| ui_text.get_mut(e)) {
-            if world.read_resource::<Time>().frame_number() % 20 == 0 {
-                let fps = world.read_resource::<FpsCounter>().sampled_fps();
-                display.text = format!("{:.0}", fps.round());
-            }
+            display.text = format!(
+                "{:.0}",
+                world.read_resource::<FpsCounter>().sampled_fps().round()
+            );
         }
     }
 }
