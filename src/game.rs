@@ -2,7 +2,11 @@ use crate::{components::*, map::WorldMap, renderer::WorldTileMap, utils};
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{math::Vector3, transform::Transform, Hidden, Time},
+    core::{
+        math::Vector3,
+        transform::{Parent, Transform},
+        Hidden, Time,
+    },
     ecs::Entity,
     prelude::*,
     renderer::{
@@ -36,14 +40,16 @@ impl SimpleState for GameState {
         // Create required resources
         world.insert(TileDimension(20.0));
 
-        // Initialize world map and camera
+        // Initialize world map
         // IMPORTANT: map initialization *must* come before everything else
         create_map(world, 80, 50, sprite_sheet.clone());
-        create_camera(world, screen_width, screen_height);
 
         // Initialize all the game-related entities
-        spawn_player(world, sprite_sheet.clone());
+        let player = spawn_player(world, sprite_sheet.clone());
         spawn_monsters(world, sprite_sheet);
+
+        // Attach a camera to the player
+        create_camera(world, player, screen_width, screen_height);
 
         // Utilities
         self.create_fps_display(world);
@@ -120,24 +126,19 @@ fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSh
         .build();
 }
 
-fn create_camera(world: &mut World, screen_width: f32, screen_height: f32) {
-    let tile_dim = world.read_resource::<TileDimension>().0;
-
+fn create_camera(world: &mut World, parent: Entity, screen_width: f32, screen_height: f32) {
     let mut position = Transform::default();
-    position.set_translation_xyz(
-        (screen_width - tile_dim) / 2.0,
-        (screen_height - tile_dim) / 2.0,
-        10.0,
-    );
+    position.set_translation_z(10.0);
 
     world
         .create_entity()
         .with(position)
+        .with(Parent::new(parent))
         .with(Camera::standard_2d(screen_width, screen_height))
         .build();
 }
 
-fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
+fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) -> Entity {
     let pos = world.read_resource::<WorldMap>().rooms()[0].center();
 
     // Insert player position as resource
@@ -164,7 +165,7 @@ fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) {
         })
         .with(Name("Hero".to_string()))
         .with(Tint(Srgba::new(0.7, 0.5, 0.0, 1.0)))
-        .build();
+        .build()
 }
 
 fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
