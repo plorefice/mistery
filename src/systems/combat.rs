@@ -1,25 +1,27 @@
-use crate::components::*;
+use crate::{components::*, game::CombatLog};
 
 use amethyst::{
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
 #[derive(SystemDesc)]
 pub struct MeleeCombatResolver;
 
 impl<'s> System<'s> for MeleeCombatResolver {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Name>,
         ReadStorage<'s, CombatStats>,
         WriteStorage<'s, TargetedForMelee>,
         WriteStorage<'s, SuffersDamage>,
+        Write<'s, CombatLog>,
     );
 
     fn run(
         &mut self,
-        (entities, names, combat_stats, mut melee_targets, mut damage): Self::SystemData,
+        (entities, names, combat_stats, mut melee_targets, mut damage, mut log): Self::SystemData,
     ) {
         let defenders = (&entities, &names, &combat_stats, melee_targets.drain());
 
@@ -33,10 +35,10 @@ impl<'s> System<'s> for MeleeCombatResolver {
                 let dmg = i32::max(0, atk_stats.power - def_stats.defense);
 
                 if dmg > 0 {
-                    println!("{} hits {} for {} hp.", atk_name, def_name, dmg);
+                    log.push(format!("{} hits {} for {} hp.", atk_name, def_name, dmg));
                     SuffersDamage::damage(&mut damage, defender, dmg as u32);
                 } else {
-                    println!("{} cannot hit {}.", atk_name, def_name);
+                    log.push(format!("{} cannot hit {}.", atk_name, def_name));
                 }
             }
         }

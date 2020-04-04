@@ -74,27 +74,19 @@ Container(
                 ),
             ],
         ),
-        Container(
+        Label(
             transform: (
                 id: "combat-log",
-                stretch: XY(x_margin: 26., y_margin: 26., keep_aspect_ratio: false)
+                stretch: XY(x_margin: 26., y_margin: 20., keep_aspect_ratio: false),
             ),
-            background: SolidColor(0.0, 0.0, 0.0, 1.0),
-            children: [
-                Label(
-                    transform: (
-                        stretch: XY(x_margin: 0., y_margin: 0., keep_aspect_ratio: false),
-                    ),
-                    text: (
-                        text: "Welcome to Mistery!",
-                        align: BottomLeft,
-                        line_mode: Wrap,
-                        font: File("font/PxPlus_IBM_EGA8.ttf", ("TTF", ())),
-                        font_size: 30.,
-                        color: (1.0, 1.0, 1.0, 1.0),
-                    ),
-                ),
-            ],
+            text: (
+                text: "",
+                align: BottomLeft,
+                line_mode: Wrap,
+                font: File("font/PxPlus_IBM_EGA8.ttf", ("TTF", ())),
+                font_size: 30.,
+                color: (1.0, 1.0, 1.0, 1.0),
+            ),
         ),
     ],
 )

@@ -17,14 +17,32 @@ use amethyst::{
     utils::fps_counter::FpsCounter,
     window::ScreenDimensions,
 };
+use itertools::Itertools;
+use std::collections::HashMap;
 
 /// Resource holding the side length of a tile.
 #[derive(Default)]
 pub struct TileDimension(pub f32);
 
+/// Resource holding the combat log.
+#[derive(Default)]
+pub struct CombatLog(Vec<String>);
+
+impl CombatLog {
+    /// Adds a line to the combat log.
+    pub fn push<S: AsRef<str>>(&mut self, line: S) {
+        self.0.push(line.as_ref().to_owned());
+    }
+
+    /// Gets the content of the log.
+    pub fn lines(&self) -> &[String] {
+        &self.0
+    }
+}
+
 #[derive(Default)]
 pub struct GameState {
-    fps_display: Option<Entity>,
+    ui_cache: HashMap<String, Entity>,
 }
 
 impl SimpleState for GameState {
@@ -39,6 +57,11 @@ impl SimpleState for GameState {
 
         // Create required resources
         world.insert(TileDimension(20.0));
+        world.insert({
+            let mut log = CombatLog::default();
+            log.push("Welcome to Mistery!");
+            log
+        });
 
         // Initialize world map (*must* come before everything else)
         create_map(world, 80, 50, sprite_sheet.clone());
@@ -58,29 +81,58 @@ impl SimpleState for GameState {
     }
 
     fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> SimpleTrans {
-        self.update_fps_display(world);
+        // Update UI
+        self.update_infobox(world);
+        self.update_fps_counter(world);
+
         Trans::None
     }
 }
 
 impl GameState {
-    // Updates the FPS counter with the measured FPS.
-    fn update_fps_display(&mut self, world: &mut World) {
-        // Find counter entity if this is the first time this function is called
-        if self.fps_display.is_none() {
-            world.exec(|finder: UiFinder<'_>| {
-                if let Some(entity) = finder.find("fps-counter") {
-                    self.fps_display = Some(entity);
-                }
-            });
+    // Updates the infobox to reflect the current game state.
+    fn update_infobox(&mut self, world: &mut World) {
+        if let Some(ui_log) = self.get_ui_element("combat-log", world) {
+            let mut ui_text = world.write_storage::<UiText>();
+            if let Some(ui_log) = ui_text.get_mut(ui_log) {
+                ui_log.text = world
+                    .read_resource::<CombatLog>()
+                    .lines()
+                    .iter()
+                    .rev()
+                    .take(3)
+                    .rev()
+                    .cloned()
+                    .intersperse("\n".to_string())
+                    .collect::<String>();
+            }
         }
+    }
 
-        let mut ui_text = world.write_storage::<UiText>();
-        if let Some(display) = self.fps_display.and_then(|e| ui_text.get_mut(e)) {
-            display.text = format!(
-                "{:.0}",
-                world.read_resource::<FpsCounter>().sampled_fps().round()
-            );
+    // Updates the FPS counter with the currently measured FPS.
+    fn update_fps_counter(&mut self, world: &mut World) {
+        if let Some(fps) = self.get_ui_element("fps-counter", world) {
+            let mut ui_text = world.write_storage::<UiText>();
+            if let Some(counter) = ui_text.get_mut(fps) {
+                counter.text = format!(
+                    "{:.0}",
+                    world.read_resource::<FpsCounter>().sampled_fps().round()
+                );
+            }
+        }
+    }
+
+    /// Returns the entity corresponding to the UI element with the given ID, if it exists.
+    fn get_ui_element<S: AsRef<str>>(&mut self, id: S, world: &mut World) -> Option<Entity> {
+        match self.ui_cache.get(id.as_ref()) {
+            Some(e) => Some(*e),
+            None => {
+                if let Some(e) = world.exec(|f: UiFinder<'_>| f.find(id.as_ref())) {
+                    self.ui_cache.insert(id.as_ref().to_owned(), e)
+                } else {
+                    None
+                }
+            }
         }
     }
 }

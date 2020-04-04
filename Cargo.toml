@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 amethyst = { version = "0.15.0", features = ["tiles"] }
 pathfinding = "2.0.4"
+itertools = "0.8.2"
 serde = "1.0.105"
 serde_derive = "1.0.105"
 rand = "0.7.3"
