@@ -1,6 +1,6 @@
 //! This module contains all the combat-related systems.
 
-use crate::{components::*, game::CombatLog};
+use crate::{components::*, resources::CombatLog};
 
 use amethyst::{
     derive::SystemDesc,

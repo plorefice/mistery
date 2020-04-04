@@ -20,6 +20,7 @@ struct WorldTileState {
     visible: bool,
 }
 
+/// Custom [`Tile`] implementation for the [`RenderTile2D`] plugin.
 #[derive(Default, Clone, Copy)]
 pub struct WorldTile;
 

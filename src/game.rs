@@ -1,4 +1,10 @@
-use crate::{components::*, map::WorldMap, renderer::WorldTileMap, utils};
+use crate::{
+    components::*,
+    map::WorldMap,
+    renderer::WorldTileMap,
+    resources::{CombatLog, TileDimension},
+    utils,
+};
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
@@ -19,26 +25,6 @@ use amethyst::{
 };
 use itertools::Itertools;
 use std::collections::HashMap;
-
-/// Resource holding the side length of a tile.
-#[derive(Default)]
-pub struct TileDimension(pub f32);
-
-/// Resource holding the combat log.
-#[derive(Default)]
-pub struct CombatLog(Vec<String>);
-
-impl CombatLog {
-    /// Adds a line to the combat log.
-    pub fn push<S: AsRef<str>>(&mut self, line: S) {
-        self.0.push(line.as_ref().to_owned());
-    }
-
-    /// Gets the content of the log.
-    pub fn lines(&self) -> &[String] {
-        &self.0
-    }
-}
 
 #[derive(Default)]
 pub struct GameState {

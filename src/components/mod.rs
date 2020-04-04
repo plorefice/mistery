@@ -1,3 +1,5 @@
+//! This module contains all the components of the ECS used throughout the game.
+
 use crate::math::Point;
 
 use amethyst::ecs::{Component, DenseVecStorage, Entity, WriteStorage};

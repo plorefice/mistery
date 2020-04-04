@@ -2,9 +2,9 @@
 
 use crate::{
     components::*,
-    game::TileDimension,
     map::{ShadowcastFoV, WorldMap},
     math::Point,
+    resources::TileDimension,
 };
 
 use amethyst::{

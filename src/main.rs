@@ -1,14 +1,13 @@
 mod components;
 mod game;
-mod input;
 mod map;
 mod math;
 mod renderer;
+mod resources;
 mod systems;
 mod utils;
 
 use game::GameState;
-use input::GameBindings;
 use renderer::*;
 use systems::*;
 

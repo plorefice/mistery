@@ -1,17 +1,56 @@
 //! This module contains all the input-related systems.
 
-use crate::{
-    components::{ActsOnTurns, InputListener, Position, WantsToMove},
-    input::{ActionBinding, GameBindings},
-};
+use crate::components::{ActsOnTurns, InputListener, Position, WantsToMove};
 
 use amethyst::{
     derive::SystemDesc,
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
-    input::InputHandler,
+    input::{BindingTypes, InputHandler},
 };
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use std::collections::HashSet;
+
+/// Stub implementation for axis bindings. Not actually used right now.
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AxisBindings;
+
+impl fmt::Display for AxisBindings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Axis bindings")
+    }
+}
+
+/// Custom implementation for action bindings.
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ActionBinding {
+    N,
+    W,
+    S,
+    E,
+    NW,
+    SW,
+    SE,
+    NE,
+}
+
+impl fmt::Display for ActionBinding {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Custom input bindings.
+///
+/// This replaces the stock `StringBindings` which are kinda clumsy to use.
+#[derive(Default, Debug)]
+pub struct GameBindings;
+
+impl BindingTypes for GameBindings {
+    type Axis = AxisBindings;
+    type Action = ActionBinding;
+}
 
 /// System for input handling and dispatching.
 ///

@@ -1,5 +1,6 @@
 use super::Point;
 
+/// A rectangle in the game world.
 #[derive(Clone, Copy)]
 pub struct Rect {
     bl: Point,
