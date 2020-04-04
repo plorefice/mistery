@@ -70,7 +70,7 @@ impl GameState {
     // Displays an FPS counter on the top left of the screen.
     fn create_fps_display(&mut self, world: &mut World) {
         let font = world.read_resource::<Loader>().load(
-            "font/square.ttf",
+            "font/PxPlus_IBM_EGA8.ttf",
             TtfFormat,
             (),
             &world.read_resource(),
