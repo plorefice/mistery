@@ -8,7 +8,7 @@ mod systems;
 mod ui;
 mod utils;
 
-use crate::{renderer::*, states::GameState, systems::*};
+use crate::{renderer::*, states::RunState, systems::*};
 
 use amethyst::{
     core::transform::TransformBundle,
@@ -23,6 +23,7 @@ use amethyst::{
     ui::{RenderUi, UiBundle},
     utils::{application_root_dir, fps_counter::FpsCounterBundle},
 };
+use states::{GameStateEvent, GameStateEventReader, GameStateWrapper};
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -77,7 +78,13 @@ fn main() -> amethyst::Result<()> {
             &["move_resolver"],
         );
 
-    let mut game = Application::new(assets_dir, GameState::default(), game_data)?;
+    let mut game = CoreApplication::<'_, _, GameStateEvent, GameStateEventReader>::new(
+        assets_dir,
+        GameStateWrapper::new(RunState::default()),
+        game_data,
+    )?;
+
+    //Application::new(assets_dir, RunState::default(), game_data)?;
     game.run();
 
     Ok(())

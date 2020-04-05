@@ -34,6 +34,7 @@ impl fmt::Display for AxisBindings {
 pub enum ActionBinding {
     Move(Direction),
     PickUp,
+    OpenInventory,
 }
 
 impl fmt::Display for ActionBinding {
@@ -146,6 +147,7 @@ impl<'s> System<'s> for InputDispatcher {
                             log.push("There is nothing here to pick up.");
                         }
                     }
+                    _ => (),
                 }
             }
         }

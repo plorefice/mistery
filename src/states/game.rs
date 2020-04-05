@@ -8,6 +8,7 @@ use crate::{
     math::{Point, Rect},
     renderer::WorldTileMap,
     resources::{CombatLog, TileDimension},
+    states::{GameState, GameTrans},
     ui::Ui,
 };
 
@@ -26,11 +27,11 @@ use rand::Rng;
 
 /// This is the core game state. This is were the magic happens.
 #[derive(Default)]
-pub struct GameState {
+pub struct RunState {
     ui: Ui,
 }
 
-impl SimpleState for GameState {
+impl GameState for RunState {
     fn on_start(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
         let sprite_sheet =
             load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
@@ -57,7 +58,7 @@ impl SimpleState for GameState {
         self.ui = Ui::new(world)
     }
 
-    fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> SimpleTrans {
+    fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> GameTrans {
         self.ui.refresh(world);
         Trans::None
     }
