@@ -8,6 +8,7 @@ use map::WorldMap;
 
 use crate::{
     components::*,
+    math::{Point, Rect},
     renderer::WorldTileMap,
     resources::{CombatLog, TileDimension},
     ui::Ui,
@@ -24,6 +25,7 @@ use amethyst::{
     renderer::{Camera, ImageFormat, SpriteSheet, SpriteSheetFormat, Texture},
     window::ScreenDimensions,
 };
+use rand::Rng;
 
 /// This is the core game state. This is were the magic happens.
 #[derive(Default)]
@@ -93,7 +95,7 @@ fn spawn_entities(world: &mut World, sheet: Handle<SpriteSheet>) {
 
     // Spawn random monsters in all the other rooms
     for room in rooms {
-        spawn::random_monster(world, room.center(), sheet.clone());
+        spawn_room(world, room, sheet.clone());
     }
 
     // Finally, create the camera
@@ -102,6 +104,36 @@ fn spawn_entities(world: &mut World, sheet: Handle<SpriteSheet>) {
         (dim.width(), dim.height())
     };
     spawn_camera(world, player, screen_width, screen_height);
+}
+
+// Spawns random entities in a room. This includes monsters and items.
+fn spawn_room(world: &mut World, room: Rect, sheet: Handle<SpriteSheet>) {
+    let mut rng = rand::thread_rng();
+
+    let n_monsters = rng.gen_range(0, spawn::MAX_MONSTERS + 1);
+    let n_items = rng.gen_range(0, spawn::MAX_ITEMS + 1);
+
+    // Compute spawn points for both items and monsters
+    let mut spawn_points = Vec::with_capacity(n_monsters + n_items);
+    for _ in 0..spawn_points.capacity() {
+        loop {
+            let x = rng.gen_range(room.left() + 1, room.right());
+            let y = rng.gen_range(room.bottom() + 1, room.top());
+            let pt = Point::new(x, y);
+
+            if !spawn_points.contains(&pt) {
+                spawn_points.push(pt);
+                break;
+            }
+        }
+    }
+
+    let (monster_spawns, _item_spawns) = spawn_points.split_at(n_monsters);
+
+    // Spawn monsters
+    for pt in monster_spawns {
+        spawn::random_monster(world, *pt, sheet.clone());
+    }
 }
 
 // Creates an orthographic camera covering the entire screen view.

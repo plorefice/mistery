@@ -8,6 +8,12 @@ use amethyst::{
     renderer::{palette::Srgba, resources::Tint, SpriteRender, SpriteSheet},
 };
 
+/// Maximum number of monsters that can spawn in a room.
+pub const MAX_MONSTERS: usize = 4;
+
+/// Maximum number of items that can spawn in a room.
+pub const MAX_ITEMS: usize = 2;
+
 /// Spawns the player entity at the given coordinates.
 pub fn player(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Entity {
     // Insert player position as resource
