@@ -1,13 +1,17 @@
 (
   axes: {},
   actions: {
-      N: [[Key(W)], [Key(Up)]],
-      W: [[Key(A)], [Key(Left)]],
-      S: [[Key(S)], [Key(Down)]],
-      E: [[Key(D)], [Key(Right)]],
-      NW: [[Key(Q)]],
-      SW: [[Key(Z)]],
-      SE: [[Key(C)]],
-      NE: [[Key(E)]],
+    // Movement keys
+    MoveN: [[Key(W)], [Key(Up)]],
+    MoveW: [[Key(A)], [Key(Left)]],
+    MoveS: [[Key(S)], [Key(Down)]],
+    MoveE: [[Key(D)], [Key(Right)]],
+    MoveNW: [[Key(Q)]],
+    MoveSW: [[Key(Z)]],
+    MoveSE: [[Key(C)]],
+    MoveNE: [[Key(E)]],
+
+    // Action keys
+    PickUp: [[Key(G)]],
   },
 )
