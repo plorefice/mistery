@@ -3,11 +3,12 @@
 use crate::{
     components::{ActsOnTurns, InputListener, Pickable, Position, WantsToMove, WantsToPickUp},
     math::Point,
+    resources::CombatLog,
 };
 
 use amethyst::{
     derive::SystemDesc,
-    ecs::{Entities, Entity, Join, Read, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Entity, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
     input::{BindingTypes, InputHandler},
 };
 use serde::{Deserialize, Serialize};
@@ -84,11 +85,22 @@ impl<'s> System<'s> for InputDispatcher {
         WriteStorage<'s, WantsToMove>,
         WriteStorage<'s, WantsToPickUp>,
         Read<'s, InputHandler<GameBindings>>,
+        Write<'s, CombatLog>,
     );
 
     fn run(
         &mut self,
-        (entities, listeners, positions, pickables, mut actors, mut movers, mut pickers, input): Self::SystemData,
+        (
+            entities,
+            listeners,
+            positions,
+            pickables,
+            mut actors,
+            mut movers,
+            mut pickers,
+            input,
+            mut log,
+        ): Self::SystemData,
     ) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
@@ -116,12 +128,23 @@ impl<'s> System<'s> for InputDispatcher {
                 match action {
                     ActionBinding::Move(d) => move_entity(e, p, *d, &mut movers),
                     ActionBinding::PickUp => {
-                        for (what, _, &Position(here)) in (&entities, &pickables, &positions).join()
-                        {
-                            if p == here {
-                                pickers.insert(e, WantsToPickUp { what }).unwrap();
-                                break;
-                            }
+                        let target_item = (&entities, &pickables, &positions)
+                            .join()
+                            .filter_map(
+                                |(e, _, &Position(here))| {
+                                    if p == here {
+                                        Some(e)
+                                    } else {
+                                        None
+                                    }
+                                },
+                            )
+                            .next();
+
+                        if let Some(what) = target_item {
+                            pickers.insert(e, WantsToPickUp { what }).unwrap();
+                        } else {
+                            log.push("There is nothing here to pick up.");
                         }
                     }
                 }
