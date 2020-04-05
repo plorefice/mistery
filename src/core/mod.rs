@@ -46,6 +46,10 @@ impl SimpleState for GameState {
             log
         });
 
+        // TODO: remove this!
+        world.register::<Item>();
+        world.register::<HealsUser>();
+
         // Initialize world map (*must* come before everything else)
         create_map(world, 80, 50, sprite_sheet.clone());
 
@@ -128,11 +132,16 @@ fn spawn_room(world: &mut World, room: Rect, sheet: Handle<SpriteSheet>) {
         }
     }
 
-    let (monster_spawns, _item_spawns) = spawn_points.split_at(n_monsters);
+    let (monster_spawns, item_spawns) = spawn_points.split_at(n_monsters);
 
     // Spawn monsters
     for pt in monster_spawns {
         spawn::random_monster(world, *pt, sheet.clone());
+    }
+
+    // Spawn items
+    for pt in item_spawns {
+        spawn::health_potion(world, *pt, sheet.clone());
     }
 }
 

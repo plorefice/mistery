@@ -38,6 +38,10 @@ impl ActsOnTurns {
 #[derive(Default, Copy, Clone, Debug, PartialEq, Component)]
 pub struct Faction(pub u32);
 
+/// Tag component for item entities.
+#[derive(Copy, Clone, Debug, Component)]
+pub struct Item;
+
 /// Component for named entities.
 #[derive(Default, Clone, Debug, Component)]
 pub struct Name(pub String);
@@ -71,6 +75,12 @@ impl Viewshed {
 /// Component for entities that block their tile in the world map.
 #[derive(Default, Copy, Clone, Debug, Component)]
 pub struct BlocksTile;
+
+/// Component for entities that can heal the user for a certain amount.
+#[derive(Copy, Clone, Debug, Component)]
+pub struct HealsUser {
+    pub amount: i32,
+}
 
 /// Component for entities that can participate in a fight.
 #[derive(Debug, Component)]

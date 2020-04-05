@@ -92,3 +92,19 @@ fn monster<S: ToString>(
         .with(Hidden) // initially monsters are not visible
         .build()
 }
+
+/// Spawns a health potion at the given coordinates.
+pub fn health_potion(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Entity {
+    world
+        .create_entity()
+        .with(Item)
+        .with(HealsUser { amount: 8 })
+        .with(Position(pos))
+        .with(SpriteRender {
+            sprite_sheet: sheet,
+            sprite_number: utils::to_glyph('¡'),
+        })
+        .with(Name(String::from("Health Potion")))
+        .with(Tint(Srgba::new(1.0, 0.0, 1.0, 1.0)))
+        .build()
+}
