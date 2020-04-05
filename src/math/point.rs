@@ -1,6 +1,6 @@
 use amethyst::core::math::Point2;
 
-use std::ops::{Index, IndexMut};
+use std::ops::{Add, Index, IndexMut};
 
 /// 2D point in the game world.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -64,5 +64,13 @@ impl Index<usize> for Point {
 impl IndexMut<usize> for Point {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.0.index_mut(index)
+    }
+}
+
+impl Add<(i32, i32)> for Point {
+    type Output = Self;
+
+    fn add(self, (dx, dy): (i32, i32)) -> Self::Output {
+        Point::new((self.x() as i32 + dx) as u32, (self.y() as i32 + dy) as u32)
     }
 }

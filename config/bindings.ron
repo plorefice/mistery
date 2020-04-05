@@ -2,14 +2,14 @@
   axes: {},
   actions: {
     // Movement keys
-    MoveN: [[Key(W)], [Key(Up)]],
-    MoveW: [[Key(A)], [Key(Left)]],
-    MoveS: [[Key(S)], [Key(Down)]],
-    MoveE: [[Key(D)], [Key(Right)]],
-    MoveNW: [[Key(Q)]],
-    MoveSW: [[Key(Z)]],
-    MoveSE: [[Key(C)]],
-    MoveNE: [[Key(E)]],
+    Move(N): [[Key(W)], [Key(Up)]],
+    Move(W): [[Key(A)], [Key(Left)]],
+    Move(S): [[Key(S)], [Key(Down)]],
+    Move(E): [[Key(D)], [Key(Right)]],
+    Move(NW): [[Key(Q)]],
+    Move(SW): [[Key(Z)]],
+    Move(SE): [[Key(C)]],
+    Move(NE): [[Key(E)]],
 
     // Action keys
     PickUp: [[Key(G)]],

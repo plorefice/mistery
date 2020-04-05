@@ -1,10 +1,13 @@
 //! This module contains all the input-related systems.
 
-use crate::components::{ActsOnTurns, InputListener, Position, WantsToMove};
+use crate::{
+    components::{ActsOnTurns, InputListener, Pickable, Position, WantsToMove, WantsToPickUp},
+    math::Point,
+};
 
 use amethyst::{
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Entity, Join, Read, ReadStorage, System, SystemData, WriteStorage},
     input::{BindingTypes, InputHandler},
 };
 use serde::{Deserialize, Serialize};
@@ -12,8 +15,12 @@ use std::fmt;
 
 use std::collections::HashSet;
 
+#[rustfmt::skip]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Direction { N, W, S, E, NW, SW, SE, NE }
+
 /// Stub implementation for axis bindings. Not actually used right now.
-#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AxisBindings;
 
 impl fmt::Display for AxisBindings {
@@ -23,16 +30,9 @@ impl fmt::Display for AxisBindings {
 }
 
 /// Custom implementation for action bindings.
-#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActionBinding {
-    MoveN,
-    MoveW,
-    MoveS,
-    MoveE,
-    MoveNW,
-    MoveSW,
-    MoveSE,
-    MoveNE,
+    Move(Direction),
     PickUp,
 }
 
@@ -79,14 +79,16 @@ impl<'s> System<'s> for InputDispatcher {
         Entities<'s>,
         ReadStorage<'s, InputListener>,
         ReadStorage<'s, Position>,
+        ReadStorage<'s, Pickable>,
         WriteStorage<'s, ActsOnTurns>,
         WriteStorage<'s, WantsToMove>,
+        WriteStorage<'s, WantsToPickUp>,
         Read<'s, InputHandler<GameBindings>>,
     );
 
     fn run(
         &mut self,
-        (entities, listeners, positions, mut actors, mut movers, input): Self::SystemData,
+        (entities, listeners, positions, pickables, mut actors, mut movers, mut pickers, input): Self::SystemData,
     ) {
         // Keep track of the actions which are down at each update
         // to implement non-repeating key press events.
@@ -110,37 +112,37 @@ impl<'s> System<'s> for InputDispatcher {
                 continue;
             }
 
-            let mut to = p;
-
             for action in self.active_actions() {
                 match action {
-                    ActionBinding::MoveN => to[1] += 1,
-                    ActionBinding::MoveW => to[0] -= 1,
-                    ActionBinding::MoveS => to[1] -= 1,
-                    ActionBinding::MoveE => to[0] += 1,
-                    ActionBinding::MoveNW => {
-                        to[1] += 1;
-                        to[0] -= 1;
+                    ActionBinding::Move(d) => move_entity(e, p, *d, &mut movers),
+                    ActionBinding::PickUp => {
+                        for (what, _, &Position(here)) in (&entities, &pickables, &positions).join()
+                        {
+                            if p == here {
+                                pickers.insert(e, WantsToPickUp { what }).unwrap();
+                                break;
+                            }
+                        }
                     }
-                    ActionBinding::MoveSW => {
-                        to[1] -= 1;
-                        to[0] -= 1;
-                    }
-                    ActionBinding::MoveSE => {
-                        to[1] -= 1;
-                        to[0] += 1;
-                    }
-                    ActionBinding::MoveNE => {
-                        to[1] += 1;
-                        to[0] += 1;
-                    }
-                    ActionBinding::PickUp => {}
                 }
-            }
-
-            if to != p {
-                movers.insert(e, WantsToMove { to }).unwrap();
             }
         }
     }
+}
+
+fn move_entity(e: Entity, from: Point, dir: Direction, movers: &mut WriteStorage<WantsToMove>) {
+    use Direction::*;
+
+    let delta = match dir {
+        N => (0, 1),
+        W => (-1, 0),
+        S => (0, -1),
+        E => (1, 0),
+        NW => (-1, 1),
+        SW => (-1, -1),
+        SE => (1, -1),
+        NE => (1, 1),
+    };
+
+    movers.insert(e, WantsToMove { to: from + delta }).unwrap();
 }
