@@ -23,7 +23,6 @@ pub fn player(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Enti
         .create_entity()
         .with(Player)
         .with(Faction(0))
-        .with(InputListener)
         .with(ActsOnTurns::default())
         .with(Position(pos))
         .with(BlocksTile)

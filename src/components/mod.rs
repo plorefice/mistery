@@ -50,10 +50,6 @@ pub struct Name(pub String);
 #[derive(Copy, Clone, Debug, Component)]
 pub struct Position(pub Point);
 
-/// Component for entities that need to respond to player input.
-#[derive(Default, Copy, Clone, Debug, Component)]
-pub struct InputListener;
-
 /// Component that keeps track of a set of visible tiles in a range.
 #[derive(Component)]
 pub struct Viewshed {

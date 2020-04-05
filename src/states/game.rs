@@ -8,7 +8,7 @@ use crate::{
     math::{Point, Rect},
     renderer::WorldTileMap,
     resources::{CombatLog, TileDimension},
-    states::{GameState, GameStateEvent, GameStateWrapper, GameTrans, InventoryState},
+    states::{GameState, GameStateEvent, GameTrans},
     systems::*,
     ui::Ui,
 };
@@ -31,6 +31,7 @@ use rand::Rng;
 #[derive(Default)]
 pub struct RunState<'a, 'b> {
     ui: Ui,
+    input: RunStateInputDispatcher,
     dispatcher: Option<Dispatcher<'a, 'b>>,
 }
 
@@ -41,16 +42,11 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
             .with(MapIndexingSystem, "map_indexing", &[])
             .with(VisibilitySystem, "visibility", &[])
             .with(TurnSystem::default(), "turn", &[])
-            .with(
-                InputDispatcher::default(),
-                "player_movement",
-                &["visibility", "turn"],
-            )
             .with(MonsterAI, "monster_ai", &["visibility", "turn"])
             .with(
                 MoveResolver,
                 "move_resolver",
-                &["player_movement", "monster_ai", "map_indexing"],
+                &["monster_ai", "map_indexing"],
             )
             .with(PickUpSystem, "pick_up", &["move_resolver"])
             .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
@@ -92,19 +88,23 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
         self.ui = Ui::new(world)
     }
 
-    fn handle_event(&mut self, _: StateData<'_, GameData>, event: GameStateEvent) -> GameTrans {
+    fn handle_event(
+        &mut self,
+        StateData { world, .. }: StateData<'_, GameData>,
+        event: GameStateEvent,
+    ) -> GameTrans {
         match &event {
             StateEvent::Window(event) if is_close_requested(&event) => Trans::Quit,
-            StateEvent::Input(InputEvent::ActionPressed(ActionBinding::OpenInventory)) => {
-                Trans::Push(Box::new(GameStateWrapper::new(InventoryState)))
+            StateEvent::Input(InputEvent::ActionPressed(action)) => {
+                self.input.handle(world, *action)
             }
             _ => Trans::None,
         }
     }
 
     fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> GameTrans {
-        if let Some(ref mut d) = self.dispatcher {
-            d.dispatch(world);
+        if let Some(dispatcher) = &mut self.dispatcher {
+            dispatcher.dispatch(world);
         }
         self.ui.refresh(world);
         Trans::None

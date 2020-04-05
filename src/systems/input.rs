@@ -1,19 +1,19 @@
 //! This module contains all the input-related systems.
 
 use crate::{
-    components::{ActsOnTurns, InputListener, Pickable, Position, WantsToMove, WantsToPickUp},
+    components::{ActsOnTurns, Pickable, Player, Position, WantsToMove, WantsToPickUp},
     math::Point,
     resources::CombatLog,
+    states::{GameStateWrapper, GameTrans, InventoryState},
 };
 
 use amethyst::{
-    derive::SystemDesc,
-    ecs::{Entities, Entity, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
-    input::{BindingTypes, InputHandler},
+    ecs::{Entities, Entity, Join, ReadStorage, World, Write, WriteStorage},
+    input::BindingTypes,
+    prelude::*,
 };
 use serde::{Deserialize, Serialize};
-
-use std::{collections::HashSet, fmt};
+use std::fmt;
 
 #[rustfmt::skip]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,107 +55,62 @@ impl BindingTypes for GameBindings {
     type Action = ActionBinding;
 }
 
-/// System for input handling and dispatching.
+/// System for input handling and dispatching in the running game state.
 ///
-/// The system is used to dispatch user input to the player entity.
-#[derive(Default, SystemDesc)]
-pub struct InputDispatcher {
-    previous: HashSet<ActionBinding>,
-    current: HashSet<ActionBinding>,
-}
+/// This is not actually a system, but I put it here because the meaning is pretty much the same.
+#[derive(Default)]
+pub struct RunStateInputDispatcher;
 
-impl InputDispatcher {
-    fn update_actions(&mut self, actions: HashSet<ActionBinding>) {
-        std::mem::swap(&mut self.previous, &mut self.current);
-        self.current = actions;
-    }
+type RunStateSystemData<'s> = (
+    Entities<'s>,
+    ReadStorage<'s, Player>,
+    ReadStorage<'s, Position>,
+    ReadStorage<'s, Pickable>,
+    WriteStorage<'s, ActsOnTurns>,
+    WriteStorage<'s, WantsToMove>,
+    WriteStorage<'s, WantsToPickUp>,
+    Write<'s, CombatLog>,
+);
 
-    fn active_actions(&self) -> impl Iterator<Item = &ActionBinding> {
-        self.current.difference(&self.previous)
-    }
-}
+impl RunStateInputDispatcher {
+    pub fn handle(&mut self, world: &mut World, action: ActionBinding) -> GameTrans {
+        let (entities, players, positions, pickables, mut actors, mut movers, mut pickers, mut log) =
+            world.system_data::<RunStateSystemData>();
 
-impl<'s> System<'s> for InputDispatcher {
-    #[allow(clippy::type_complexity)]
-    type SystemData = (
-        Entities<'s>,
-        ReadStorage<'s, InputListener>,
-        ReadStorage<'s, Position>,
-        ReadStorage<'s, Pickable>,
-        WriteStorage<'s, ActsOnTurns>,
-        WriteStorage<'s, WantsToMove>,
-        WriteStorage<'s, WantsToPickUp>,
-        Read<'s, InputHandler<GameBindings>>,
-        Write<'s, CombatLog>,
-    );
-
-    fn run(
-        &mut self,
-        (
-            entities,
-            listeners,
-            positions,
-            pickables,
-            mut actors,
-            mut movers,
-            mut pickers,
-            input,
-            mut log,
-        ): Self::SystemData,
-    ) {
-        // Keep track of the actions which are down at each update
-        // to implement non-repeating key press events.
-        self.update_actions(
-            input
-                .bindings
-                .actions()
-                .filter(|a| input.action_is_down(a).unwrap_or_default())
-                .cloned()
-                .collect(),
-        );
-
-        // Do nothing if no action is active
-        if self.active_actions().count() == 0 {
-            return;
-        }
-
-        // This should actually loop only once right now
-        for (e, _, &Position(p), actor) in (&entities, &listeners, &positions, &mut actors).join() {
+        if let Some((player, actor, &Position(p), _)) =
+            (&entities, &mut actors, &positions, &players).join().next()
+        {
             if !actor.perform() {
-                continue;
+                return Trans::None;
             }
 
-            for action in self.active_actions() {
-                match action {
-                    ActionBinding::Move(d) => move_entity(e, p, *d, &mut movers),
-                    ActionBinding::PickUp => {
-                        let target_item = (&entities, &pickables, &positions)
-                            .join()
-                            .filter_map(
-                                |(e, _, &Position(here))| {
-                                    if p == here {
-                                        Some(e)
-                                    } else {
-                                        None
-                                    }
-                                },
-                            )
-                            .next();
-
-                        if let Some(what) = target_item {
-                            pickers.insert(e, WantsToPickUp { what }).unwrap();
-                        } else {
-                            log.push("There is nothing here to pick up.");
-                        }
-                    }
-                    _ => (),
+            match action {
+                ActionBinding::Move(d) => move_player(player, p, d, &mut movers),
+                ActionBinding::PickUp => pickup_item(
+                    player,
+                    &entities,
+                    &pickables,
+                    &positions,
+                    &mut pickers,
+                    &mut log,
+                ),
+                ActionBinding::OpenInventory => {
+                    return Trans::Push(Box::new(GameStateWrapper::new(InventoryState::default())));
                 }
+                _ => (),
             }
         }
+
+        Trans::None
     }
 }
 
-fn move_entity(e: Entity, from: Point, dir: Direction, movers: &mut WriteStorage<WantsToMove>) {
+fn move_player(
+    player: Entity,
+    from: Point,
+    dir: Direction,
+    movers: &mut WriteStorage<WantsToMove>,
+) {
     use Direction::*;
 
     let delta = match dir {
@@ -169,5 +124,37 @@ fn move_entity(e: Entity, from: Point, dir: Direction, movers: &mut WriteStorage
         NE => (1, 1),
     };
 
-    movers.insert(e, WantsToMove { to: from + delta }).unwrap();
+    movers
+        .insert(player, WantsToMove { to: from + delta })
+        .unwrap();
+}
+
+fn pickup_item(
+    player: Entity,
+    entities: &Entities,
+    pickables: &ReadStorage<Pickable>,
+    positions: &ReadStorage<Position>,
+    pickers: &mut WriteStorage<WantsToPickUp>,
+    log: &mut Write<CombatLog>,
+) {
+    if let Some(&Position(p)) = positions.get(player) {
+        let target_item = (entities, pickables, positions)
+            .join()
+            .filter_map(
+                |(e, _, &Position(here))| {
+                    if p == here {
+                        Some(e)
+                    } else {
+                        None
+                    }
+                },
+            )
+            .next();
+
+        if let Some(what) = target_item {
+            pickers.insert(player, WantsToPickUp { what }).unwrap();
+        } else {
+            log.push("There is nothing here to pick up.");
+        }
+    }
 }
