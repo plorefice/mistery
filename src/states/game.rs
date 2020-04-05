@@ -8,7 +8,8 @@ use crate::{
     math::{Point, Rect},
     renderer::WorldTileMap,
     resources::{CombatLog, TileDimension},
-    states::{GameState, GameTrans},
+    states::{GameState, GameStateEvent, GameStateWrapper, GameTrans, InventoryState},
+    systems::*,
     ui::Ui,
 };
 
@@ -18,7 +19,8 @@ use amethyst::{
         math::Vector3,
         transform::{Parent, Transform},
     },
-    ecs::Entity,
+    ecs::{Dispatcher, DispatcherBuilder, Entity},
+    input::{is_close_requested, InputEvent},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteSheet, SpriteSheetFormat, Texture},
     window::ScreenDimensions,
@@ -27,14 +29,42 @@ use rand::Rng;
 
 /// This is the core game state. This is were the magic happens.
 #[derive(Default)]
-pub struct RunState {
+pub struct RunState<'a, 'b> {
     ui: Ui,
+    dispatcher: Option<Dispatcher<'a, 'b>>,
 }
 
-impl GameState for RunState {
+impl<'a, 'b> GameState for RunState<'a, 'b> {
     fn on_start(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
-        let sprite_sheet =
-            load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
+        // Setup systems for this state
+        let mut dispatcher = DispatcherBuilder::new()
+            .with(MapIndexingSystem, "map_indexing", &[])
+            .with(VisibilitySystem, "visibility", &[])
+            .with(TurnSystem::default(), "turn", &[])
+            .with(
+                InputDispatcher::default(),
+                "player_movement",
+                &["visibility", "turn"],
+            )
+            .with(MonsterAI, "monster_ai", &["visibility", "turn"])
+            .with(
+                MoveResolver,
+                "move_resolver",
+                &["player_movement", "monster_ai", "map_indexing"],
+            )
+            .with(PickUpSystem, "pick_up", &["move_resolver"])
+            .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
+            .with(DamageResolver, "damage_resolver", &["melee_resolver"])
+            .with(
+                PositionTranslator,
+                "position_translator",
+                &["move_resolver"],
+            )
+            .build();
+
+        dispatcher.setup(world);
+
+        self.dispatcher = Some(dispatcher);
 
         // Create required resources
         world.insert(TileDimension(20.0));
@@ -48,6 +78,10 @@ impl GameState for RunState {
         world.register::<Pickable>();
         world.register::<HealsUser>();
 
+        // Load spritesheet
+        let sprite_sheet =
+            load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
+
         // Initialize world map (*must* come before everything else)
         create_map(world, 80, 50, sprite_sheet.clone());
 
@@ -58,7 +92,20 @@ impl GameState for RunState {
         self.ui = Ui::new(world)
     }
 
+    fn handle_event(&mut self, _: StateData<'_, GameData>, event: GameStateEvent) -> GameTrans {
+        match &event {
+            StateEvent::Window(event) if is_close_requested(&event) => Trans::Quit,
+            StateEvent::Input(InputEvent::ActionPressed(ActionBinding::OpenInventory)) => {
+                Trans::Push(Box::new(GameStateWrapper::new(InventoryState)))
+            }
+            _ => Trans::None,
+        }
+    }
+
     fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> GameTrans {
+        if let Some(ref mut d) = self.dispatcher {
+            d.dispatch(world);
+        }
         self.ui.refresh(world);
         Trans::None
     }

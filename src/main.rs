@@ -53,30 +53,7 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default())
                 .with_plugin(RenderTiles2D::<WorldTile, MortonEncoder>::default()),
-        )?
-        // Game logic
-        .with(MapIndexingSystem, "map_indexing", &[])
-        .with(VisibilitySystem, "visibility", &[])
-        .with(TurnSystem::default(), "turn", &[])
-        .with(
-            InputDispatcher::default(),
-            "player_movement",
-            &["visibility", "turn"],
-        )
-        .with(MonsterAI, "monster_ai", &["visibility", "turn"])
-        .with(
-            MoveResolver,
-            "move_resolver",
-            &["player_movement", "monster_ai", "map_indexing"],
-        )
-        .with(PickUpSystem, "pick_up", &["move_resolver"])
-        .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
-        .with(DamageResolver, "damage_resolver", &["melee_resolver"])
-        .with(
-            PositionTranslator,
-            "position_translator",
-            &["move_resolver"],
-        );
+        )?;
 
     let mut game = CoreApplication::<'_, _, GameStateEvent, GameStateEventReader>::new(
         assets_dir,

@@ -1,9 +1,11 @@
 //! This modules contains all the Amethyst [`State`]s that the game can be in.
 
 mod game;
+mod inventory;
 
 // Re-export all modules
 pub use game::*;
+pub use inventory::*;
 
 use crate::systems::GameBindings;
 

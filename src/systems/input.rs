@@ -35,6 +35,7 @@ pub enum ActionBinding {
     Move(Direction),
     PickUp,
     OpenInventory,
+    Cancel,
 }
 
 impl fmt::Display for ActionBinding {

@@ -14,5 +14,6 @@
     // Action keys
     PickUp: [[Key(G)]],
     OpenInventory: [[Key(I)], [Key(B)]],
+    Cancel: [[Key(Escape)]],
   },
 )
