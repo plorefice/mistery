@@ -12,9 +12,8 @@ use amethyst::{
     input::{BindingTypes, InputHandler},
 };
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt};
 
 #[rustfmt::skip]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]

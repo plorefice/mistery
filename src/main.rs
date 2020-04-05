@@ -3,11 +3,12 @@ mod core;
 mod math;
 mod renderer;
 mod resources;
+mod states;
 mod systems;
 mod ui;
 mod utils;
 
-use crate::{core::GameState, renderer::*, systems::*};
+use crate::{renderer::*, states::GameState, systems::*};
 
 use amethyst::{
     core::transform::TransformBundle,
