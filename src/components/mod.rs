@@ -38,9 +38,9 @@ impl ActsOnTurns {
 #[derive(Default, Copy, Clone, Debug, PartialEq, Component)]
 pub struct Faction(pub u32);
 
-/// Tag component for item entities.
+/// Tag component for entities that can be picked up from the ground.
 #[derive(Copy, Clone, Debug, Component)]
-pub struct Item;
+pub struct Pickable;
 
 /// Component for named entities.
 #[derive(Default, Clone, Debug, Component)]
@@ -82,6 +82,12 @@ pub struct HealsUser {
     pub amount: i32,
 }
 
+/// Component for entities (usually `Item`s) located in another's entity inventory.
+#[derive(Copy, Clone, Debug, Component)]
+pub struct InBackpack {
+    pub owner: Entity,
+}
+
 /// Component for entities that can participate in a fight.
 #[derive(Debug, Component)]
 pub struct CombatStats {
@@ -95,6 +101,12 @@ pub struct CombatStats {
 #[derive(Debug, Component)]
 pub struct WantsToMove {
     pub to: Point,
+}
+
+/// Component for entities that want to pick up a `Pickable` entity.
+#[derive(Debug, Component)]
+pub struct WantsToPickUp {
+    pub what: Entity,
 }
 
 /// Component for entities that are being targeted by another entity for melee combat.

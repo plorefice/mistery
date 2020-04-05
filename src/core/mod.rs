@@ -47,7 +47,7 @@ impl SimpleState for GameState {
         });
 
         // TODO: remove this!
-        world.register::<Item>();
+        world.register::<Pickable>();
         world.register::<HealsUser>();
 
         // Initialize world map (*must* come before everything else)

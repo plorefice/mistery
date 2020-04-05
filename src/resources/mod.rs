@@ -10,8 +10,8 @@ pub struct CombatLog(Vec<String>);
 
 impl CombatLog {
     /// Adds a line to the combat log.
-    pub fn push<S: AsRef<str>>(&mut self, line: S) {
-        self.0.push(line.as_ref().to_owned());
+    pub fn push<S: ToString>(&mut self, line: S) {
+        self.0.push(line.to_string());
     }
 
     /// Gets the content of the log.

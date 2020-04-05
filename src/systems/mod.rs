@@ -5,10 +5,12 @@
 mod ai;
 mod combat;
 mod input;
+mod items;
 mod map;
 
 // Re-export all modules
 pub use ai::*;
 pub use combat::*;
 pub use input::*;
+pub use items::*;
 pub use map::*;

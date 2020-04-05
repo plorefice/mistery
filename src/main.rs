@@ -67,6 +67,7 @@ fn main() -> amethyst::Result<()> {
             "move_resolver",
             &["player_movement", "monster_ai", "map_indexing"],
         )
+        .with(PickUpSystem, "pick_up", &["move_resolver"])
         .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
         .with(DamageResolver, "damage_resolver", &["melee_resolver"])
         .with(

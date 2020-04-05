@@ -97,7 +97,7 @@ fn monster<S: ToString>(
 pub fn health_potion(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Entity {
     world
         .create_entity()
-        .with(Item)
+        .with(Pickable)
         .with(HealsUser { amount: 8 })
         .with(Position(pos))
         .with(SpriteRender {
