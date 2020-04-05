@@ -2,7 +2,7 @@
 
 use crate::{
     components::*,
-    map::{ShadowcastFoV, WorldMap},
+    core::map::{ShadowcastFoV, WorldMap},
     math::Point,
     resources::TileDimension,
 };

@@ -1,3 +1,5 @@
+//! Core map structure and handling.
+
 use crate::math::{self, Point, Rect};
 
 use rand::Rng;

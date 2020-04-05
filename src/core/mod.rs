@@ -1,6 +1,12 @@
+//! This module contains the core of the game logic which does not fit into any ECS category.
+//! This include the game initialization, map structure, entity spawning logic etc.
+
+pub mod map;
+
+use map::WorldMap;
+
 use crate::{
     components::*,
-    map::WorldMap,
     renderer::WorldTileMap,
     resources::{CombatLog, TileDimension},
     utils,
@@ -26,6 +32,7 @@ use amethyst::{
 use itertools::Itertools;
 use std::collections::HashMap;
 
+/// This is the core game state. This is were the magic happens.
 #[derive(Default)]
 pub struct GameState {
     ui_cache: HashMap<String, Entity>,

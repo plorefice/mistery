@@ -1,15 +1,12 @@
 mod components;
-mod game;
-mod map;
+mod core;
 mod math;
 mod renderer;
 mod resources;
 mod systems;
 mod utils;
 
-use game::GameState;
-use renderer::*;
-use systems::*;
+use crate::{core::GameState, renderer::*, systems::*};
 
 use amethyst::{
     core::transform::TransformBundle,

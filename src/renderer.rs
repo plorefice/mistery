@@ -1,5 +1,5 @@
 use crate::{
-    map::{TileKind, WorldMap},
+    core::map::{TileKind, WorldMap},
     math::Point,
     utils,
 };

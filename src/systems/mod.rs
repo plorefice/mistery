@@ -7,7 +7,7 @@ mod combat;
 mod input;
 mod map;
 
-// Re-export all systems
+// Re-export all modules
 pub use ai::*;
 pub use combat::*;
 pub use input::*;

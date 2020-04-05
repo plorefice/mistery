@@ -2,7 +2,7 @@
 
 use crate::{
     components::*,
-    map::{self, WorldMap},
+    core::map::{self, WorldMap},
     math,
 };
 
