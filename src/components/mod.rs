@@ -105,6 +105,12 @@ pub struct WantsToPickUp {
     pub what: Entity,
 }
 
+/// Component for entities that have decided to use an item.
+#[derive(Debug, Component)]
+pub struct WantsToUseItem {
+    pub what: Entity,
+}
+
 /// Component for entities that are being targeted by another entity for melee combat.
 #[derive(Default, Debug, Component)]
 pub struct TargetedForMelee {

@@ -87,15 +87,30 @@ impl GameState for InventoryState {
         }
     }
 
-    fn handle_event(&mut self, _: StateData<'_, GameData>, event: GameStateEvent) -> GameTrans {
+    fn handle_event(
+        &mut self,
+        StateData { world, .. }: StateData<'_, GameData>,
+        event: GameStateEvent,
+    ) -> GameTrans {
         match &event {
             StateEvent::Window(event) if is_close_requested(&event) => Trans::Quit,
             StateEvent::Input(InputEvent::ActionPressed(ActionBinding::Cancel)) => Trans::Pop,
             StateEvent::Input(InputEvent::KeyTyped(c @ 'a'..='z')) => {
                 let i = ((*c as u8) - b'a') as usize;
-                if let Some((_, name)) = self.item_list.get(i) {
-                    println!("Trying to use {}.", name);
-                    Trans::Pop
+
+                if let Some((what, _)) = self.item_list.get(i) {
+                    if let Some((player, _)) = (&world.entities(), &world.read_storage::<Player>())
+                        .join()
+                        .next()
+                    {
+                        world
+                            .write_storage()
+                            .insert(player, WantsToUseItem { what: *what })
+                            .unwrap();
+                        Trans::Pop
+                    } else {
+                        Trans::None
+                    }
                 } else {
                     Trans::None
                 }

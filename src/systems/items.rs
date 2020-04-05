@@ -37,3 +37,37 @@ impl<'s> System<'s> for PickUpSystem {
         }
     }
 }
+
+#[derive(SystemDesc)]
+pub struct ItemUsageResolver;
+
+impl<'s> System<'s> for ItemUsageResolver {
+    #[allow(clippy::type_complexity)]
+    type SystemData = (
+        Entities<'s>,
+        ReadStorage<'s, Name>,
+        ReadStorage<'s, HealsUser>,
+        WriteStorage<'s, WantsToUseItem>,
+        WriteStorage<'s, CombatStats>,
+        Write<'s, CombatLog>,
+    );
+
+    fn run(&mut self, (entities, names, healing, mut users, mut stats, mut log): Self::SystemData) {
+        for (who, WantsToUseItem { what }) in (&entities, users.drain()).join() {
+            // Healing item used by a unit with combat stats -> heal unit
+            if let (Some(stats), Some(HealsUser { amount })) =
+                (&mut stats.get_mut(who), healing.get(what))
+            {
+                stats.hp = i32::min(stats.max_hp, stats.hp + amount);
+
+                log.push(format!(
+                    "You use the {}, healing {} hp.",
+                    names.get(what).map(|Name(n)| n.as_str()).unwrap_or("item"),
+                    amount
+                ))
+            }
+
+            entities.delete(what).unwrap();
+        }
+    }
+}

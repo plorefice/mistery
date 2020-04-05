@@ -49,6 +49,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
                 &["monster_ai", "map_indexing"],
             )
             .with(PickUpSystem, "pick_up", &["move_resolver"])
+            .with(ItemUsageResolver, "item_usage_resolver", &["move_resolver"])
             .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
             .with(DamageResolver, "damage_resolver", &["melee_resolver"])
             .with(
