@@ -2,6 +2,7 @@
 //! This include the game initialization, map structure, entity spawning logic etc.
 
 pub mod map;
+pub mod spawn;
 
 use map::WorldMap;
 
@@ -10,7 +11,6 @@ use crate::{
     renderer::WorldTileMap,
     resources::{CombatLog, TileDimension},
     ui::Ui,
-    utils,
 };
 
 use amethyst::{
@@ -18,14 +18,10 @@ use amethyst::{
     core::{
         math::Vector3,
         transform::{Parent, Transform},
-        Hidden,
     },
     ecs::Entity,
     prelude::*,
-    renderer::{
-        palette::Srgba, resources::Tint, Camera, ImageFormat, SpriteRender, SpriteSheet,
-        SpriteSheetFormat, Texture,
-    },
+    renderer::{Camera, ImageFormat, SpriteSheet, SpriteSheetFormat, Texture},
     window::ScreenDimensions,
 };
 
@@ -37,11 +33,6 @@ pub struct GameState {
 
 impl SimpleState for GameState {
     fn on_start(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
-        let (screen_width, screen_height) = {
-            let dim = world.read_resource::<ScreenDimensions>();
-            (dim.width(), dim.height())
-        };
-
         let sprite_sheet =
             load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
 
@@ -57,11 +48,7 @@ impl SimpleState for GameState {
         create_map(world, 80, 50, sprite_sheet.clone());
 
         // Initialize all the game-related entities
-        let player = spawn_player(world, sprite_sheet.clone());
-        spawn_monsters(world, sprite_sheet);
-
-        // Attach a camera to the player
-        create_camera(world, player, screen_width, screen_height);
+        spawn_entities(world, sprite_sheet);
 
         // Load UI
         self.ui = Ui::new(world)
@@ -73,6 +60,7 @@ impl SimpleState for GameState {
     }
 }
 
+// Creates the world map.
 fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSheet>) {
     let tile_dim = world.read_resource::<TileDimension>().0 as u32;
 
@@ -91,7 +79,33 @@ fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSh
         .build();
 }
 
-fn create_camera(world: &mut World, parent: Entity, screen_width: f32, screen_height: f32) {
+// Spawns the player, the monsters and the camera.
+fn spawn_entities(world: &mut World, sheet: Handle<SpriteSheet>) {
+    // Iterator over all the map rooms
+    let mut rooms = world
+        .read_resource::<WorldMap>()
+        .rooms()
+        .to_vec()
+        .into_iter();
+
+    // Spawn the player in the middle of the first room.
+    let player = spawn::player(world, rooms.next().unwrap().center(), sheet.clone());
+
+    // Spawn random monsters in all the other rooms
+    for room in rooms {
+        spawn::random_monster(world, room.center(), sheet.clone());
+    }
+
+    // Finally, create the camera
+    let (screen_width, screen_height) = {
+        let dim = world.read_resource::<ScreenDimensions>();
+        (dim.width(), dim.height())
+    };
+    spawn_camera(world, player, screen_width, screen_height);
+}
+
+// Creates an orthographic camera covering the entire screen view.
+fn spawn_camera(world: &mut World, parent: Entity, screen_width: f32, screen_height: f32) {
     let mut position = Transform::default();
     position.set_translation_z(10.0);
 
@@ -103,76 +117,7 @@ fn create_camera(world: &mut World, parent: Entity, screen_width: f32, screen_he
         .build();
 }
 
-fn spawn_player(world: &mut World, sheet: Handle<SpriteSheet>) -> Entity {
-    let pos = world.read_resource::<WorldMap>().rooms()[0].center();
-
-    // Insert player position as resource
-    world.insert(pos);
-
-    world
-        .create_entity()
-        .with(Player)
-        .with(Faction(0))
-        .with(InputListener)
-        .with(ActsOnTurns::default())
-        .with(Position(pos))
-        .with(BlocksTile)
-        .with(Viewshed::new(8))
-        .with(CombatStats {
-            max_hp: 30,
-            hp: 30,
-            defense: 2,
-            power: 5,
-        })
-        .with(SpriteRender {
-            sprite_sheet: sheet,
-            sprite_number: utils::to_glyph('@'),
-        })
-        .with(Name("Hero".to_string()))
-        .with(Tint(Srgba::new(0.7, 0.5, 0.0, 1.0)))
-        .build()
-}
-
-fn spawn_monsters(world: &mut World, sheet: Handle<SpriteSheet>) {
-    let spawn_points = world
-        .read_resource::<WorldMap>()
-        .rooms()
-        .iter()
-        .skip(1)
-        .map(|r| r.center())
-        .collect::<Vec<_>>();
-
-    for (i, spawn_point) in spawn_points.into_iter().enumerate() {
-        let (sprite, name) = if rand::random() {
-            (utils::to_glyph('g'), "Goblin")
-        } else {
-            (utils::to_glyph('o'), "Orc")
-        };
-
-        world
-            .create_entity()
-            .with(Faction(1))
-            .with(ActsOnTurns::default())
-            .with(Position(spawn_point))
-            .with(BlocksTile)
-            .with(Viewshed::new(8))
-            .with(CombatStats {
-                max_hp: 16,
-                hp: 16,
-                defense: 1,
-                power: 4,
-            })
-            .with(SpriteRender {
-                sprite_sheet: sheet.clone(),
-                sprite_number: sprite,
-            })
-            .with(Name(format!("{} #{}", name, i)))
-            .with(Tint(Srgba::new(1.0, 0.0, 0.0, 1.0)))
-            .with(Hidden) // initially monsters are not visible
-            .build();
-    }
-}
-
+// Loads an images and corresponding RON file as spritesheet.
 fn load_sprite_sheet(world: &mut World, png_path: &str, ron_path: &str) -> Handle<SpriteSheet> {
     let texture_handle = {
         let loader = world.read_resource::<Loader>();
