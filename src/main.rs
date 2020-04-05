@@ -4,6 +4,7 @@ mod math;
 mod renderer;
 mod resources;
 mod systems;
+mod ui;
 mod utils;
 
 use crate::{core::GameState, renderer::*, systems::*};
