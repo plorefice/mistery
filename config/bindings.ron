@@ -2,18 +2,19 @@
   axes: {},
   actions: {
     // Movement keys
-    Move(N):  [[Key(W)], [Key(Up)]],
-    Move(W):  [[Key(A)], [Key(Left)]],
-    Move(S):  [[Key(S)], [Key(Down)]],
-    Move(E):  [[Key(D)], [Key(Right)]],
-    Move(NW): [[Key(Q)]],
-    Move(SW): [[Key(Z)]],
-    Move(SE): [[Key(C)]],
-    Move(NE): [[Key(E)]],
+    Move(N):  [[Key(K)], [Key(Up)]],
+    Move(W):  [[Key(H)], [Key(Left)]],
+    Move(S):  [[Key(J)], [Key(Down)]],
+    Move(E):  [[Key(L)], [Key(Right)]],
+    Move(NW): [[Key(Y)]],
+    Move(SW): [[Key(B)]],
+    Move(SE): [[Key(N)]],
+    Move(NE): [[Key(U)]],
 
     // Action keys
-    PickUp: [[Key(G)]],
-    OpenInventory: [[Key(I)], [Key(B)]],
-    Cancel: [[Key(Escape)]],
+    PickUp:        [[Key(G)]],
+    OpenInventory: [[Key(I)]],
+    DropItem:      [[Key(D)]],
+    Cancel:        [[Key(Escape)]],
   },
 )

@@ -4,7 +4,7 @@ use crate::{
     components::{ActsOnTurns, Pickable, Player, Position, WantsToMove, WantsToPickUp},
     math::Point,
     resources::CombatLog,
-    states::{GameStateWrapper, GameTrans, InventoryState},
+    states::{GameStateWrapper, GameTrans, Intent, InventoryState},
 };
 
 use amethyst::{
@@ -35,6 +35,7 @@ pub enum ActionBinding {
     Move(Direction),
     PickUp,
     OpenInventory,
+    DropItem,
     Cancel,
 }
 
@@ -95,7 +96,14 @@ impl RunStateInputDispatcher {
                     &mut log,
                 ),
                 ActionBinding::OpenInventory => {
-                    return Trans::Push(Box::new(GameStateWrapper::new(InventoryState::default())));
+                    return Trans::Push(Box::new(GameStateWrapper::new(InventoryState::new(
+                        Intent::UseItem,
+                    ))));
+                }
+                ActionBinding::DropItem => {
+                    return Trans::Push(Box::new(GameStateWrapper::new(InventoryState::new(
+                        Intent::DropItem,
+                    ))));
                 }
                 _ => (),
             }

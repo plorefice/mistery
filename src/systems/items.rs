@@ -38,6 +38,7 @@ impl<'s> System<'s> for PickUpSystem {
     }
 }
 
+/// System that resolve's an entity's intent to use an item.
 #[derive(SystemDesc)]
 pub struct ItemUsageResolver;
 
@@ -68,6 +69,43 @@ impl<'s> System<'s> for ItemUsageResolver {
             }
 
             entities.delete(what).unwrap();
+        }
+    }
+}
+
+/// System that resolve's an entity's intent to drop an item.
+#[derive(SystemDesc)]
+pub struct ItemDropResolver;
+
+impl<'s> System<'s> for ItemDropResolver {
+    #[allow(clippy::type_complexity)]
+    type SystemData = (
+        ReadStorage<'s, Name>,
+        WriteStorage<'s, WantsToDropItem>,
+        WriteStorage<'s, Position>,
+        WriteStorage<'s, InBackpack>,
+        WriteStorage<'s, Hidden>,
+        Write<'s, CombatLog>,
+    );
+
+    fn run(
+        &mut self,
+        (names, mut droppers, mut positions, mut carried, mut hiddens, mut log): Self::SystemData,
+    ) {
+        let locations = (&positions, droppers.drain())
+            .join()
+            .map(|(&Position(whereto), WantsToDropItem { what })| (what, whereto))
+            .collect::<Vec<_>>();
+
+        for (what, whereto) in locations {
+            carried.remove(what).unwrap();
+            hiddens.remove(what).unwrap();
+            positions.insert(what, Position(whereto)).unwrap();
+
+            log.push(format!(
+                "You drop the {} on the floor.",
+                names.get(what).map(|Name(n)| n.as_str()).unwrap_or("item"),
+            ))
         }
     }
 }

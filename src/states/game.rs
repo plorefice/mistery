@@ -49,6 +49,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
             )
             .with(PickUpSystem, "pick_up", &["move_resolver"])
             .with(ItemUsageResolver, "item_usage_resolver", &["move_resolver"])
+            .with(ItemDropResolver, "item_drop_resolver", &["move_resolver"])
             .with(MeleeCombatResolver, "melee_resolver", &["move_resolver"])
             .with(DamageResolver, "damage_resolver", &["melee_resolver"])
             .with(

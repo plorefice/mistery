@@ -12,10 +12,25 @@ use amethyst::{
 };
 use itertools::Itertools;
 
-#[derive(Default)]
+pub enum Intent {
+    UseItem,
+    DropItem,
+}
+
 pub struct InventoryState {
+    intent: Intent,
     ui_handle: Option<Entity>,
     item_list: Vec<(Entity, String)>,
+}
+
+impl InventoryState {
+    pub fn new(intent: Intent) -> InventoryState {
+        InventoryState {
+            intent,
+            ui_handle: None,
+            item_list: Vec::new(),
+        }
+    }
 }
 
 impl GameState for InventoryState {
@@ -103,10 +118,20 @@ impl GameState for InventoryState {
                         .join()
                         .next()
                     {
-                        world
-                            .write_storage()
-                            .insert(player, WantsToUseItem { what: *what })
-                            .unwrap();
+                        match self.intent {
+                            Intent::UseItem => {
+                                world
+                                    .write_storage()
+                                    .insert(player, WantsToUseItem { what: *what })
+                                    .unwrap();
+                            }
+                            Intent::DropItem => {
+                                world
+                                    .write_storage()
+                                    .insert(player, WantsToDropItem { what: *what })
+                                    .unwrap();
+                            }
+                        }
                         Trans::Pop
                     } else {
                         Trans::None
