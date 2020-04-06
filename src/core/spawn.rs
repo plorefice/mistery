@@ -106,6 +106,7 @@ pub fn health_potion(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) 
     world
         .create_entity()
         .with(Pickable)
+        .with(Consumable)
         .with(HealsUser { amount: 8 })
         .with(Position(pos))
         .with(SpriteRender {
@@ -122,6 +123,7 @@ pub fn magic_missile_scroll(world: &mut World, pos: Point, sheet: Handle<SpriteS
     world
         .create_entity()
         .with(Pickable)
+        .with(Consumable)
         .with(Ranged { range: 6 })
         .with(InflictsDamage { amount: 8 })
         .with(Position(pos))

@@ -42,6 +42,10 @@ pub struct Faction(pub u32);
 #[derive(Component)]
 pub struct Pickable;
 
+/// Tag component for entities that are destroyed after one use.
+#[derive(Component)]
+pub struct Consumable;
+
 /// Component for named entities.
 #[derive(Component)]
 pub struct Name(pub String);

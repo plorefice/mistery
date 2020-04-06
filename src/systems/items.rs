@@ -47,13 +47,17 @@ impl<'s> System<'s> for ItemUsageResolver {
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Name>,
+        ReadStorage<'s, Consumable>,
         ReadStorage<'s, HealsUser>,
         WriteStorage<'s, WantsToUseItem>,
         WriteStorage<'s, CombatStats>,
         Write<'s, CombatLog>,
     );
 
-    fn run(&mut self, (entities, names, healing, mut users, mut stats, mut log): Self::SystemData) {
+    fn run(
+        &mut self,
+        (entities, names, consumables, healing, mut users, mut stats, mut log): Self::SystemData,
+    ) {
         for (who, WantsToUseItem { what }) in (&entities, users.drain()).join() {
             // Healing item used by a unit with combat stats -> heal unit
             if let (Some(stats), Some(HealsUser { amount })) =
@@ -68,7 +72,9 @@ impl<'s> System<'s> for ItemUsageResolver {
                 ))
             }
 
-            entities.delete(what).unwrap();
+            if consumables.contains(what) {
+                entities.delete(what).unwrap();
+            }
         }
     }
 }
