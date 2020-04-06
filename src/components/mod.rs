@@ -6,11 +6,11 @@ use amethyst::ecs::{Component, DenseVecStorage, Entity, WriteStorage};
 use std::collections::HashSet;
 
 /// Tag component for the player's entity.
-#[derive(Default, Copy, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct Player;
 
 /// Tag component for entities that can act in a turn.
-#[derive(Default, Copy, Clone, Debug, Component)]
+#[derive(Default, Copy, Clone, Component)]
 pub struct ActsOnTurns {
     ap: u32,
 }
@@ -35,19 +35,19 @@ impl ActsOnTurns {
 }
 
 /// Tag component for an entity belonging to a faction.
-#[derive(Default, Copy, Clone, Debug, PartialEq, Component)]
+#[derive(Component, PartialEq)]
 pub struct Faction(pub u32);
 
 /// Tag component for entities that can be picked up from the ground.
-#[derive(Copy, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct Pickable;
 
 /// Component for named entities.
-#[derive(Default, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct Name(pub String);
 
 /// Logical position in the world map.
-#[derive(Copy, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct Position(pub Point);
 
 /// Component that keeps track of a set of visible tiles in a range.
@@ -69,23 +69,23 @@ impl Viewshed {
 }
 
 /// Component for entities that block their tile in the world map.
-#[derive(Default, Copy, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct BlocksTile;
 
 /// Component for entities that can heal the user for a certain amount.
-#[derive(Copy, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct HealsUser {
     pub amount: i32,
 }
 
 /// Component for entities (usually `Item`s) located in another's entity inventory.
-#[derive(Copy, Clone, Debug, Component)]
+#[derive(Component)]
 pub struct InBackpack {
     pub owner: Entity,
 }
 
 /// Component for entities that can participate in a fight.
-#[derive(Debug, Component)]
+#[derive(Component)]
 pub struct CombatStats {
     pub hp: i32,
     pub max_hp: i32,
@@ -94,31 +94,31 @@ pub struct CombatStats {
 }
 
 /// Component for entities that have decided to move in their turn.
-#[derive(Debug, Component)]
+#[derive(Component)]
 pub struct WantsToMove {
     pub to: Point,
 }
 
 /// Component for entities that want to pick up a `Pickable` entity.
-#[derive(Debug, Component)]
+#[derive(Component)]
 pub struct WantsToPickUp {
     pub what: Entity,
 }
 
 /// Component for entities that have decided to use an item.
-#[derive(Debug, Component)]
+#[derive(Component)]
 pub struct WantsToUseItem {
     pub what: Entity,
 }
 
 /// Component for entities that have decided to drop an item.
-#[derive(Debug, Component)]
+#[derive(Component)]
 pub struct WantsToDropItem {
     pub what: Entity,
 }
 
 /// Component for entities that are being targeted by another entity for melee combat.
-#[derive(Default, Debug, Component)]
+#[derive(Default, Component)]
 pub struct TargetedForMelee {
     pub by: Vec<Entity>,
 }
@@ -136,7 +136,7 @@ impl TargetedForMelee {
 }
 
 /// Component for entities that have to suffer an amout of damage.
-#[derive(Default, Debug, Component)]
+#[derive(Default, Component)]
 pub struct SuffersDamage {
     pub damage: u32,
 }

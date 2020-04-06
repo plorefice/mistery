@@ -32,8 +32,6 @@ pub struct TurnSystem {
     current: Turn,
 }
 
-impl TurnSystem {}
-
 impl<'s> System<'s> for TurnSystem {
     type SystemData = (WriteStorage<'s, ActsOnTurns>, ReadStorage<'s, Player>);
 
@@ -112,7 +110,7 @@ impl<'s> System<'s> for MeleeCombatResolver {
 /// The system iterates over all the units with a pending [`SufferDamage`] component
 /// and subtracts the pending damage from their current HP. If a unit dies from the damage,
 /// its entity is killed and later deleted.
-#[derive(Default, SystemDesc)]
+#[derive(SystemDesc)]
 pub struct DamageResolver;
 
 impl<'s> System<'s> for DamageResolver {

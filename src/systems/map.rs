@@ -17,7 +17,7 @@ use amethyst::{
 /// Refreshes the map's internal index.
 ///
 /// Mainly used for recomputing the map's blocked tiles once a unit dies.
-#[derive(Default, SystemDesc)]
+#[derive(SystemDesc)]
 pub struct MapIndexingSystem;
 
 impl<'s> System<'s> for MapIndexingSystem {
@@ -39,7 +39,7 @@ impl<'s> System<'s> for MapIndexingSystem {
 /// Computes a unit's field of vision.
 ///
 /// For each entity with a [`Viewshed`] component, this system computes their field of vision.
-#[derive(Default, SystemDesc)]
+#[derive(SystemDesc)]
 pub struct VisibilitySystem;
 
 impl<'s> System<'s> for VisibilitySystem {
@@ -90,7 +90,7 @@ impl<'s> System<'s> for VisibilitySystem {
 }
 
 /// System that manages entities that want to move in this turn.
-#[derive(Default, SystemDesc)]
+#[derive(SystemDesc)]
 pub struct MoveResolver;
 
 impl MoveResolver {
@@ -186,7 +186,7 @@ impl<'s> System<'s> for MoveResolver {
 /// it's easier to reason in terms of integer tile indexes.
 /// This system takes this logical representation of position and turns it into
 /// something that the rendering system can actually work with.
-#[derive(Default, SystemDesc)]
+#[derive(SystemDesc)]
 pub struct PositionTranslator;
 
 impl<'s> System<'s> for PositionTranslator {
