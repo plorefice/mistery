@@ -72,9 +72,10 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
             log
         });
 
-        // TODO: remove this!
+        // Register components that are not used in any system.
         world.register::<Pickable>();
-        world.register::<HealsUser>();
+        world.register::<Ranged>();
+        world.register::<InflictsDamage>();
 
         // Load spritesheet
         let sprite_sheet =
@@ -188,7 +189,7 @@ fn spawn_room(world: &mut World, room: Rect, sheet: Handle<SpriteSheet>) {
 
     // Spawn items
     for pt in item_spawns {
-        spawn::health_potion(world, *pt, sheet.clone());
+        spawn::random_item(world, *pt, sheet.clone());
     }
 }
 

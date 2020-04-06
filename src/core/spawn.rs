@@ -51,6 +51,15 @@ pub fn random_monster(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>)
     }
 }
 
+/// Spawns a random item at the given coordinates.
+pub fn random_item(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Entity {
+    if rand::random() {
+        health_potion(world, pos, sheet)
+    } else {
+        magic_missile_scroll(world, pos, sheet)
+    }
+}
+
 /// Spawns an orc at the given coordinates.
 pub fn orc(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Entity {
     monster(world, pos, utils::to_glyph('o'), "Orc", sheet)
@@ -105,5 +114,22 @@ pub fn health_potion(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) 
         })
         .with(Name(String::from("Health Potion")))
         .with(Tint(Srgba::new(1.0, 0.0, 1.0, 1.0)))
+        .build()
+}
+
+/// Spawns a scroll of magic missile, a ranged consumable scroll.
+pub fn magic_missile_scroll(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Entity {
+    world
+        .create_entity()
+        .with(Pickable)
+        .with(Ranged { range: 6 })
+        .with(InflictsDamage { amount: 8 })
+        .with(Position(pos))
+        .with(SpriteRender {
+            sprite_sheet: sheet,
+            sprite_number: utils::to_glyph(')'),
+        })
+        .with(Name(String::from("Magic Missile Scroll")))
+        .with(Tint(Srgba::new(1.0, 0.75, 0.25, 1.0)))
         .build()
 }

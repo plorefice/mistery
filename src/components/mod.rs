@@ -50,6 +50,12 @@ pub struct Name(pub String);
 #[derive(Component)]
 pub struct Position(pub Point);
 
+/// Component for entities that have a limited tile range.
+#[derive(Component)]
+pub struct Ranged {
+    pub range: u32,
+}
+
 /// Component that keeps track of a set of visible tiles in a range.
 #[derive(Component)]
 pub struct Viewshed {
@@ -75,6 +81,12 @@ pub struct BlocksTile;
 /// Component for entities that can heal the user for a certain amount.
 #[derive(Component)]
 pub struct HealsUser {
+    pub amount: i32,
+}
+
+/// Component for entities that can inflict a certain amount of damage.
+#[derive(Component)]
+pub struct InflictsDamage {
     pub amount: i32,
 }
 
