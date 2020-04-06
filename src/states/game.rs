@@ -41,8 +41,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
         let mut dispatcher = DispatcherBuilder::new()
             .with(MapIndexingSystem, "map_indexing", &[])
             .with(VisibilitySystem, "visibility", &[])
-            .with(TurnSystem::default(), "turn", &[])
-            .with(MonsterAI, "monster_ai", &["visibility", "turn"])
+            .with(MonsterAI, "monster_ai", &["visibility"])
             .with(
                 MoveResolver,
                 "move_resolver",
@@ -57,6 +56,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
                 "position_translator",
                 &["move_resolver"],
             )
+            .with(TurnSystem::default(), "turn", &["position_translator"])
             .build();
 
         dispatcher.setup(world);
