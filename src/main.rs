@@ -19,7 +19,7 @@ use amethyst::{
         types::DefaultBackend,
         RenderingBundle,
     },
-    tiles::{MortonEncoder, RenderTiles2D},
+    tiles::{MortonEncoder2D, RenderTiles2D},
     ui::{RenderUi, UiBundle},
     utils::{application_root_dir, fps_counter::FpsCounterBundle},
 };
@@ -52,7 +52,7 @@ fn main() -> amethyst::Result<()> {
                 )
                 .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default())
-                .with_plugin(RenderTiles2D::<WorldTile, MortonEncoder>::default()),
+                .with_plugin(RenderTiles2D::<ConsoleTile, MortonEncoder2D>::default()),
         )?;
 
     let mut game = CoreApplication::<'_, _, GameStateEvent, GameStateEventReader>::new(
@@ -61,7 +61,6 @@ fn main() -> amethyst::Result<()> {
         game_data,
     )?;
 
-    //Application::new(assets_dir, RunState::default(), game_data)?;
     game.run();
 
     Ok(())

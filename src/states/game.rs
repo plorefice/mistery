@@ -1,12 +1,11 @@
 //! This module contains the core of the game logic which does not fit into any ECS category.
 //! This include the game initialization, map structure, entity spawning logic etc.
 
-use crate::core::{map::WorldMap, spawn};
-
 use crate::{
     components::*,
+    core::{map::WorldMap, spawn},
     math::{Point, Rect},
-    renderer::WorldTileMap,
+    renderer::{self, ConsoleTileMap},
     resources::{CombatLog, TileDimension},
     states::{GameState, GameStateEvent, GameTrans},
     systems::*,
@@ -31,6 +30,7 @@ use rand::Rng;
 #[derive(Default)]
 pub struct RunState<'a, 'b> {
     ui: Ui,
+    map: Option<Entity>,
     input: RunStateInputDispatcher,
     dispatcher: Option<Dispatcher<'a, 'b>>,
 }
@@ -82,7 +82,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
             load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
 
         // Initialize world map (*must* come before everything else)
-        create_map(world, 80, 50, sprite_sheet.clone());
+        self.map = Some(create_map(world, 80, 50, sprite_sheet.clone()));
 
         // Initialize all the game-related entities
         spawn_entities(world, sprite_sheet);
@@ -112,13 +112,19 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
         self.ui.refresh(world);
         Trans::None
     }
+
+    fn shadow_update(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
+        if let Some(map) = self.map {
+            renderer::refresh_map_view(world, map);
+        }
+    }
 }
 
 // Creates the world map.
-fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSheet>) {
+fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSheet>) -> Entity {
     let tile_dim = world.read_resource::<TileDimension>().0 as u32;
 
-    let tilemap = WorldTileMap::new(
+    let tilemap = ConsoleTileMap::new(
         Vector3::new(width, height, 1),
         Vector3::new(tile_dim, tile_dim, 1),
         Some(sheet),
@@ -130,7 +136,7 @@ fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSh
         .create_entity()
         .with(Position([width / 2, height / 2 - 1].into()))
         .with(tilemap)
-        .build();
+        .build()
 }
 
 // Spawns the player, the monsters and the camera.

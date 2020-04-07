@@ -57,11 +57,26 @@ pub trait GameState {
         }
     }
 
+    /// Executed repeatedly at stable, predictable intervals (1/60th of a second by default).
+    fn fixed_update(&mut self, _data: StateData<'_, GameData<'static, 'static>>) -> GameTrans {
+        Trans::None
+    }
+
     /// Executed on every frame immediately, as fast as the engine will allow
     /// (taking into account the frame rate limit).
     fn update(&mut self, _data: &mut StateData<'_, GameData<'static, 'static>>) -> GameTrans {
         Trans::None
     }
+
+    /// Executed repeatedly at stable, predictable intervals (1/60th of a second by default),
+    /// even when this is not the active state, as long as this state is on the
+    /// [StateMachine](struct.StateMachine.html)'s state-stack.
+    fn shadow_fixed_update(&mut self, _data: StateData<'_, GameData<'static, 'static>>) {}
+
+    /// Executed on every frame immediately, as fast as the engine will allow
+    /// (taking into account the frame rate limit), even when this is not the active state,
+    /// as long as this state is on the [StateMachine](struct.StateMachine.html)'s state-stack.
+    fn shadow_update(&mut self, _data: StateData<'_, GameData<'static, 'static>>) {}
 }
 
 impl<T: GameState> State<GameData<'static, 'static>, GameStateEvent> for GameStateWrapper<T> {
@@ -95,8 +110,8 @@ impl<T: GameState> State<GameData<'static, 'static>, GameStateEvent> for GameSta
     }
 
     /// Executed repeatedly at stable, predictable intervals (1/60th of a second by default).
-    fn fixed_update(&mut self, _data: StateData<'_, GameData<'static, 'static>>) -> GameTrans {
-        Trans::None
+    fn fixed_update(&mut self, data: StateData<'_, GameData<'static, 'static>>) -> GameTrans {
+        self.deref_mut().fixed_update(data)
     }
 
     /// Executed on every frame immediately, as fast as the engine will allow
@@ -110,12 +125,16 @@ impl<T: GameState> State<GameData<'static, 'static>, GameStateEvent> for GameSta
     /// Executed repeatedly at stable, predictable intervals (1/60th of a second by default),
     /// even when this is not the active state, as long as this state is on the
     /// [StateMachine](struct.StateMachine.html)'s state-stack.
-    fn shadow_fixed_update(&mut self, _data: StateData<'_, GameData<'static, 'static>>) {}
+    fn shadow_fixed_update(&mut self, data: StateData<'_, GameData<'static, 'static>>) {
+        self.deref_mut().shadow_fixed_update(data)
+    }
 
     /// Executed on every frame immediately, as fast as the engine will allow
     /// (taking into account the frame rate limit), even when this is not the active state,
     /// as long as this state is on the [StateMachine](struct.StateMachine.html)'s state-stack.
-    fn shadow_update(&mut self, _data: StateData<'_, GameData<'static, 'static>>) {}
+    fn shadow_update(&mut self, data: StateData<'_, GameData<'static, 'static>>) {
+        self.deref_mut().shadow_update(data)
+    }
 }
 
 /// A wrapper type for `GameState` implementors to circumvent the orphan rule.
