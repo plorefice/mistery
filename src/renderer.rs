@@ -41,24 +41,24 @@ pub fn refresh_map_view(world: &mut World, tilemap: Entity) {
     if let Some(tilemap) = world.write_storage::<ConsoleTileMap>().get_mut(tilemap) {
         for pt in &Region::new(Point3::new(0, 0, 0), Point3::new(width - 1, height - 1, 0)) {
             if let Some(tile) = tilemap.get_mut(&pt) {
-                let pt = Point::new(pt[0], height - pt[1] - 1);
+                // `Tile` coordinates grow right-down, while everything else in Amethyst
+                // grows right-up, so the Y coordinate needs to be flipped here.
+                let state = map[Point::new(pt[0], height - pt[1] - 1)];
 
-                if map.revealed(pt) == Some(&true) {
-                    if let Some(kind) = map.get(pt) {
-                        tile.glyph = Some(match kind {
-                            TileKind::Floor => utils::to_glyph('.'),
-                            TileKind::Wall => utils::to_glyph('#'),
-                        });
+                if state.revealed {
+                    tile.glyph = Some(match state.kind {
+                        TileKind::Floor => utils::to_glyph('.'),
+                        TileKind::Wall => utils::to_glyph('#'),
+                    });
 
-                        tile.tint = if map.visible(pt) == Some(&true) {
-                            match kind {
-                                TileKind::Floor => Srgba::new(0.2, 0.2, 0.2, 1.0),
-                                TileKind::Wall => Srgba::new(0.0, 0.17, 0.21, 1.0),
-                            }
-                        } else {
-                            Srgba::new(0.05, 0.05, 0.05, 1.0)
-                        };
-                    }
+                    tile.tint = if state.visible {
+                        match state.kind {
+                            TileKind::Floor => Srgba::new(0.2, 0.2, 0.2, 1.0),
+                            TileKind::Wall => Srgba::new(0.0, 0.17, 0.21, 1.0),
+                        }
+                    } else {
+                        Srgba::new(0.05, 0.05, 0.05, 1.0)
+                    };
                 } else {
                     tile.glyph = None;
                 }

@@ -31,7 +31,7 @@ impl<'s> System<'s> for MapIndexingSystem {
         // Recompute blocked tiles at the end of a turn
         map.reload_blocked_tiles();
         for (_, &Position(p)) in (&blockers, &positions).join() {
-            *map.blocked_mut(p).unwrap() = true;
+            map[p].blocked = true;
         }
     }
 }
@@ -68,8 +68,8 @@ impl<'s> System<'s> for VisibilitySystem {
                     // First, reveal the visible tiles on the map
                     map.clear_visibility();
                     for pt in &vs.visible {
-                        *map.revealed_mut(*pt).unwrap() = true;
-                        *map.visible_mut(*pt).unwrap() = true;
+                        map[pt].revealed = true;
+                        map[pt].visible = true;
                     }
 
                     // For renderable entities, hide those that are not in view
@@ -104,8 +104,8 @@ impl MoveResolver {
     ) {
         // Move the blocked tile, if the entity is blocking
         if blocks {
-            *map.blocked_mut(*from).unwrap() = false;
-            *map.blocked_mut(to).unwrap() = true;
+            map[*from].blocked = false;
+            map[to].blocked = true;
         }
 
         *from = to;
@@ -145,36 +145,32 @@ impl<'s> System<'s> for MoveResolver {
         ): Self::SystemData,
     ) {
         for (e1, WantsToMove { to }) in (&entitites, movers.drain()).join() {
-            match map.blocked(to) {
-                Some(&false) => {
-                    if let Some(Position(p)) = positions.get_mut(e1) {
-                        self.move_entity(e1, &mut map, p, to, blockers.contains(e1)); // update map state
+            if !map[to].blocked {
+                if let Some(Position(p)) = positions.get_mut(e1) {
+                    self.move_entity(e1, &mut map, p, to, blockers.contains(e1)); // update map state
 
-                        // If the entity has a Viewshed, recompute it on movement
-                        if let Some(vs) = viewsheds.get_mut(e1) {
-                            vs.dirty = true;
-                        }
+                    // If the entity has a Viewshed, recompute it on movement
+                    if let Some(vs) = viewsheds.get_mut(e1) {
+                        vs.dirty = true;
+                    }
 
-                        // If the entity is the player, update its global position
-                        if players.contains(e1) {
-                            *ppos = to;
+                    // If the entity is the player, update its global position
+                    if players.contains(e1) {
+                        *ppos = to;
+                    }
+                }
+            } else {
+                let victims = (&entitites, &factions, &positions, &combatants);
+
+                // If a fighter tries to moves tries to move into another fighter's tile
+                // of a different faction, engage him in combat instead.
+                if let Some(Faction(f1)) = factions.get(e1) {
+                    for (victim, Faction(f2), Position(p2), _) in victims.join() {
+                        if to == *p2 && f1 != f2 {
+                            TargetedForMelee::target(&mut melee_targets, e1, victim);
                         }
                     }
                 }
-                Some(&true) => {
-                    let victims = (&entitites, &factions, &positions, &combatants);
-
-                    // If a fighter tries to moves tries to move into another fighter's tile
-                    // of a different faction, engage him in combat instead.
-                    if let Some(Faction(f1)) = factions.get(e1) {
-                        for (victim, Faction(f2), Position(p2), _) in victims.join() {
-                            if to == *p2 && f1 != f2 {
-                                TargetedForMelee::target(&mut melee_targets, e1, victim);
-                            }
-                        }
-                    }
-                }
-                _ => (),
             }
         }
     }

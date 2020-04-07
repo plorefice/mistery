@@ -3,7 +3,11 @@
 use crate::math::{self, Point, Rect};
 
 use rand::Rng;
-use std::{collections::HashSet, iter};
+use std::{
+    collections::HashSet,
+    iter,
+    ops::{Index, IndexMut},
+};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TileKind {
@@ -37,11 +41,11 @@ impl TileKind {
 
 /// Internal state of a map tile.
 #[derive(Default, Copy, Clone)]
-struct TileState {
-    kind: TileKind,
-    revealed: bool,
-    visible: bool,
-    blocked: bool,
+pub struct TileState {
+    pub kind: TileKind,
+    pub revealed: bool,
+    pub visible: bool,
+    pub blocked: bool,
 }
 
 #[derive(Default)]
@@ -115,39 +119,6 @@ impl WorldMap {
         self.tiles.get(self.pt_to_idx(p)).map(|t| t.kind)
     }
 
-    /// Returns whether the tile at the given point has been revealed, if present.
-    pub fn revealed(&self, p: Point) -> Option<&bool> {
-        self.tiles.get(self.pt_to_idx(p)).map(|t| &t.revealed)
-    }
-
-    /// Gets a tile's revealed state mutably.
-    pub fn revealed_mut(&mut self, p: Point) -> Option<&mut bool> {
-        let idx = self.pt_to_idx(p);
-        self.tiles.get_mut(idx).map(|t| &mut t.revealed)
-    }
-
-    /// Returns whether the tile at the given point is currently visible, if present.
-    pub fn visible(&self, p: Point) -> Option<&bool> {
-        self.tiles.get(self.pt_to_idx(p)).map(|t| &t.visible)
-    }
-
-    /// Gets a tile's visibility state mutably.
-    pub fn visible_mut(&mut self, p: Point) -> Option<&mut bool> {
-        let idx = self.pt_to_idx(p);
-        self.tiles.get_mut(idx).map(|t| &mut t.visible)
-    }
-
-    /// Returns whether the tile at the given point is currently blocked, if present.
-    pub fn blocked(&self, p: Point) -> Option<&bool> {
-        self.tiles.get(self.pt_to_idx(p)).map(|t| &t.blocked)
-    }
-
-    /// Gets a tile's blocked state mutably.
-    pub fn blocked_mut(&mut self, p: Point) -> Option<&mut bool> {
-        let idx = self.pt_to_idx(p);
-        self.tiles.get_mut(idx).map(|t| &mut t.blocked)
-    }
-
     /// Populates blocked tiles in the map to their default values.
     pub fn reload_blocked_tiles(&mut self) {
         for t in self.tiles.iter_mut() {
@@ -181,7 +152,7 @@ impl WorldMap {
         .iter()
         .filter_map(|&delta| {
             let p = p.translate(delta.0, delta.1);
-            if let Some(false) = self.blocked(p) {
+            if !self[p].blocked {
                 return Some(p);
             }
             None
@@ -223,6 +194,36 @@ impl WorldMap {
             let idx = self.xy_to_idx(x, y);
             self.tiles[idx].kind = TileKind::Floor;
         }
+    }
+}
+
+impl Index<Point> for WorldMap {
+    type Output = TileState;
+
+    fn index(&self, index: Point) -> &Self::Output {
+        &self.tiles[self.pt_to_idx(index)]
+    }
+}
+
+impl Index<&Point> for WorldMap {
+    type Output = TileState;
+
+    fn index(&self, index: &Point) -> &Self::Output {
+        &self.tiles[self.pt_to_idx(*index)]
+    }
+}
+
+impl IndexMut<Point> for WorldMap {
+    fn index_mut(&mut self, index: Point) -> &mut Self::Output {
+        let idx = self.pt_to_idx(index);
+        &mut self.tiles[idx]
+    }
+}
+
+impl IndexMut<&Point> for WorldMap {
+    fn index_mut(&mut self, index: &Point) -> &mut Self::Output {
+        let idx = self.pt_to_idx(*index);
+        &mut self.tiles[idx]
     }
 }
 
