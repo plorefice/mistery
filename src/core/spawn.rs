@@ -26,7 +26,7 @@ pub fn player(world: &mut World, pos: Point, sheet: Handle<SpriteSheet>) -> Enti
         .with(ActsOnTurns::default())
         .with(Position(pos))
         .with(BlocksTile)
-        .with(Viewshed::new(8))
+        .with(Viewshed::new(25))
         .with(CombatStats {
             max_hp: 30,
             hp: 30,
