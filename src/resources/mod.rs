@@ -2,7 +2,7 @@
 
 /// Resource holding the side length of a tile.
 #[derive(Default)]
-pub struct TileDimension(pub f32);
+pub struct TileDimension(pub u32);
 
 /// Resource holding the combat log.
 #[derive(Default)]

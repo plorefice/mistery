@@ -14,10 +14,7 @@ use crate::{
 
 use amethyst::{
     assets::{AssetStorage, Handle, Loader},
-    core::{
-        math::Vector3,
-        transform::{Parent, Transform},
-    },
+    core::{math::Vector3, transform::Transform, Parent},
     ecs::{Dispatcher, DispatcherBuilder, Entity},
     input::{is_close_requested, InputEvent},
     prelude::*,
@@ -26,11 +23,17 @@ use amethyst::{
 };
 use rand::Rng;
 
+const CONSOLE_WIDTH: u32 = 80;
+const CONSOLE_HEIGHT: u32 = 50;
+
+const MAP_WIDTH: u32 = 80;
+const MAP_HEIGHT: u32 = 50;
+
 /// This is the core game state. This is were the magic happens.
 #[derive(Default)]
 pub struct RunState<'a, 'b> {
-    ui: Ui,
-    map: Option<Entity>,
+    ui: Option<Ui>,
+    console: Option<Entity>,
     input: RunStateInputDispatcher,
     dispatcher: Option<Dispatcher<'a, 'b>>,
 }
@@ -65,7 +68,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
         self.dispatcher = Some(dispatcher);
 
         // Create required resources
-        world.insert(TileDimension(20.0));
+        world.insert(TileDimension(20));
         world.insert({
             let mut log = CombatLog::default();
             log.push("Welcome to Mistery!");
@@ -82,13 +85,17 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
             load_sprite_sheet(world, "texture/cp437_20x20.png", "texture/cp437_20x20.ron");
 
         // Initialize world map (*must* come before everything else)
-        self.map = Some(create_map(world, 80, 50, sprite_sheet.clone()));
+        world.insert(WorldMap::rooms_and_corridors(MAP_WIDTH, MAP_HEIGHT));
 
         // Initialize all the game-related entities
-        spawn_entities(world, sprite_sheet);
+        let player = spawn_entities(world, sprite_sheet.clone());
+
+        // Allocate console tilemap for rendering
+        let console = create_console(world, player, sprite_sheet);
 
         // Load UI
-        self.ui = Ui::new(world)
+        self.ui = Some(Ui::new(console));
+        self.console = Some(console);
     }
 
     fn handle_event(
@@ -109,38 +116,43 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
         if let Some(dispatcher) = &mut self.dispatcher {
             dispatcher.dispatch(world);
         }
-        self.ui.refresh(world);
         Trans::None
     }
 
     fn shadow_update(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
-        if let Some(map) = self.map {
+        if let Some(map) = self.console {
             renderer::refresh_map_view(world, map);
+        }
+        if let Some(ui) = &mut self.ui {
+            ui.refresh(world);
         }
     }
 }
 
-// Creates the world map.
-fn create_map(world: &mut World, width: u32, height: u32, sheet: Handle<SpriteSheet>) -> Entity {
-    let tile_dim = world.read_resource::<TileDimension>().0 as u32;
+// Allocates a `TileMap` for the console emulation.
+fn create_console(world: &mut World, pivot: Entity, sheet: Handle<SpriteSheet>) -> Entity {
+    let tile_dim = world.read_resource::<TileDimension>().0;
 
     let tilemap = ConsoleTileMap::new(
-        Vector3::new(width, height, 1),
+        Vector3::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, 2),
         Vector3::new(tile_dim, tile_dim, 1),
         Some(sheet),
     );
 
-    world.insert(WorldMap::rooms_and_corridors(width, height));
+    // Align tilemap to pivot
+    let mut transform = Transform::default();
+    transform.set_translation_xyz(0., -(tile_dim as f32), 0.);
 
     world
         .create_entity()
-        .with(Position([width / 2, height / 2 - 1].into()))
+        .with(Parent::new(pivot))
+        .with(transform)
         .with(tilemap)
         .build()
 }
 
-// Spawns the player, the monsters and the camera.
-fn spawn_entities(world: &mut World, sheet: Handle<SpriteSheet>) {
+// Spawns the player, the monsters and the camera. Returns the player entity.
+fn spawn_entities(world: &mut World, sheet: Handle<SpriteSheet>) -> Entity {
     // Iterator over all the map rooms
     let mut rooms = world
         .read_resource::<WorldMap>()
@@ -162,6 +174,8 @@ fn spawn_entities(world: &mut World, sheet: Handle<SpriteSheet>) {
         (dim.width(), dim.height())
     };
     spawn_camera(world, player, screen_width, screen_height);
+
+    player
 }
 
 // Spawns random entities in a room. This includes monsters and items.
@@ -200,14 +214,17 @@ fn spawn_room(world: &mut World, room: Rect, sheet: Handle<SpriteSheet>) {
 }
 
 // Creates an orthographic camera covering the entire screen view.
-fn spawn_camera(world: &mut World, parent: Entity, screen_width: f32, screen_height: f32) {
-    let mut position = Transform::default();
-    position.set_translation_z(10.0);
+fn spawn_camera(world: &mut World, pivot: Entity, screen_width: f32, screen_height: f32) {
+    let tile_dim = world.read_resource::<TileDimension>().0 as f32;
+
+    // Put the camera 10 units away from the console, and center it on the pivot
+    let mut transform = Transform::default();
+    transform.set_translation_xyz(-tile_dim / 2., -tile_dim / 2., 10.);
 
     world
         .create_entity()
-        .with(position)
-        .with(Parent::new(parent))
+        .with(Parent::new(pivot))
+        .with(transform)
         .with(Camera::standard_2d(screen_width, screen_height))
         .build();
 }
