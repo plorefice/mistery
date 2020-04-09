@@ -36,6 +36,16 @@ impl Rect {
         self.tr.y()
     }
 
+    /// Returns the width of the rectangle.
+    pub fn width(&self) -> u32 {
+        self.right() - self.left() + 1
+    }
+
+    /// Returns the height of the rectangle.
+    pub fn height(&self) -> u32 {
+        self.top() - self.bottom() + 1
+    }
+
     /// Returns true if `self` intersects with `other`.
     pub fn intersects(&self, other: &Rect) -> bool {
         self.left() <= other.right()
@@ -50,5 +60,11 @@ impl Rect {
             (self.left() + self.right()) / 2,
             (self.bottom() + self.top()) / 2,
         )
+    }
+}
+
+impl From<(u32, u32, u32, u32)> for Rect {
+    fn from((x, y, w, h): (u32, u32, u32, u32)) -> Self {
+        Rect::new(x, y, w, h)
     }
 }
