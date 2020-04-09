@@ -10,7 +10,7 @@ use crate::{
 use amethyst::{
     core::{transform::Transform, Hidden},
     derive::SystemDesc,
-    ecs::{Entities, Entity, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
     renderer::SpriteRender,
 };
 
@@ -94,20 +94,12 @@ impl<'s> System<'s> for VisibilitySystem {
 pub struct MoveResolver;
 
 impl MoveResolver {
-    fn move_entity(
-        &self,
-        _: Entity,
-        map: &mut WorldMap,
-        from: &mut Point,
-        to: Point,
-        blocks: bool,
-    ) {
+    fn move_entity(&self, map: &mut WorldMap, from: &mut Point, to: Point, blocks: bool) {
         // Move the blocked tile, if the entity is blocking
         if blocks {
             map[*from].blocked = false;
             map[to].blocked = true;
         }
-
         *from = to;
     }
 }
@@ -146,8 +138,8 @@ impl<'s> System<'s> for MoveResolver {
     ) {
         for (e1, WantsToMove { to }) in (&entitites, movers.drain()).join() {
             if !map[to].blocked {
-                if let Some(Position(p)) = positions.get_mut(e1) {
-                    self.move_entity(e1, &mut map, p, to, blockers.contains(e1)); // update map state
+                if let Some(Position(from)) = positions.get_mut(e1) {
+                    self.move_entity(&mut map, from, to, blockers.contains(e1)); // update map state
 
                     // If the entity has a Viewshed, recompute it on movement
                     if let Some(vs) = viewsheds.get_mut(e1) {
