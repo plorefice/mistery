@@ -1,16 +1,17 @@
 use crate::{
     components::*,
+    renderer::ConsoleTileMap,
     states::{GameState, GameStateEvent, GameTrans},
     systems::ActionBinding,
+    ui::Console,
 };
 
 use amethyst::{
     ecs::{Entity, Join},
     input::{is_close_requested, InputEvent},
     prelude::*,
-    ui::{UiCreator, UiFinder, UiText, UiTransform},
+    renderer::palette::Srgba,
 };
-use itertools::Itertools;
 
 pub enum Intent {
     UseItem,
@@ -19,15 +20,15 @@ pub enum Intent {
 
 pub struct InventoryState {
     intent: Intent,
-    ui_handle: Option<Entity>,
+    console: Entity,
     item_list: Vec<(Entity, String)>,
 }
 
 impl InventoryState {
-    pub fn new(intent: Intent) -> InventoryState {
+    pub fn new(intent: Intent, console: Entity) -> InventoryState {
         InventoryState {
             intent,
-            ui_handle: None,
+            console,
             item_list: Vec::new(),
         }
     }
@@ -35,9 +36,6 @@ impl InventoryState {
 
 impl GameState for InventoryState {
     fn on_start(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
-        let handle =
-            world.exec(|mut creator: UiCreator<'_>| creator.create("ui/inventory.ron", ()));
-
         // Store item list for later
         self.item_list = {
             let entities = world.entities();
@@ -47,48 +45,39 @@ impl GameState for InventoryState {
 
             (&entities, &stored, &named)
                 .join()
-                .enumerate()
-                .filter_map(|(i, (item, InBackpack { owner }, Name(name)))| {
+                .filter_map(|(item, InBackpack { owner }, Name(name))| {
                     if players.contains(*owner) {
-                        Some((
-                            item,
-                            format!("({}) {}", (b'a' + i as u8) as char, name.clone()),
-                        ))
+                        Some((item, name.clone()))
                     } else {
                         None
                     }
                 })
-                .collect_vec()
+                .collect::<Vec<_>>()
         };
-
-        // Store handle to delete it later
-        self.ui_handle = Some(handle);
     }
 
     fn update(&mut self, StateData { world, .. }: &mut StateData<'_, GameData>) -> GameTrans {
-        let ui_container = world.exec(|f: UiFinder<'_>| f.find("inventory"));
-        let ui_list = world.exec(|f: UiFinder<'_>| f.find("item-list"));
+        let count = self.item_list.len() as u32;
+        let (x, y, w, h) = (10, 10, 35, count + 4);
 
-        if let (Some(container), Some(list)) = (ui_container, ui_list) {
-            let mut font_size = 0.0;
-            {
-                let mut ui_text = world.write_storage::<UiText>();
-                if let Some(list) = ui_text.get_mut(list) {
-                    font_size = list.font_size;
-                    list.text = self
-                        .item_list
-                        .iter()
-                        .map(|(_, n)| n)
-                        .cloned()
-                        .intersperse("\n".to_string())
-                        .collect();
-                }
-            }
-            {
-                let mut ui_transforms = world.write_storage::<UiTransform>();
-                if let Some(container) = ui_transforms.get_mut(container) {
-                    container.height = 40.0 + self.item_list.len() as f32 * font_size;
-                }
+        let title_col = Srgba::new(1., 1., 0., 1.);
+        let text_col = Srgba::new(1., 1., 1., 1.);
+
+        if let Some(con) = world
+            .write_storage::<ConsoleTileMap>()
+            .get_mut(self.console)
+        {
+            con.draw_box((x, y, w, h));
+
+            con.print_color((x + 2, y), " Inventory ", title_col);
+            con.print_color((x + 2, y + h - 1), " Press ESC to cancel ", title_col);
+
+            for (i, item) in self.item_list.iter().map(|(_, text)| text).enumerate() {
+                let y = y + i as u32 + 2;
+                con.put((x + 2, y), '(', text_col);
+                con.put((x + 3, y), (b'a' + i as u8) as char, title_col);
+                con.put((x + 4, y), ')', text_col);
+                con.print((x + 6, y), item);
             }
         }
 
@@ -96,9 +85,11 @@ impl GameState for InventoryState {
     }
 
     fn on_stop(&mut self, StateData { world, .. }: StateData<'_, GameData>) {
-        // Destroy UI
-        if let Some(handle) = self.ui_handle {
-            world.delete_entity(handle).unwrap()
+        if let Some(con) = world
+            .write_storage::<ConsoleTileMap>()
+            .get_mut(self.console)
+        {
+            con.clear();
         }
     }
 

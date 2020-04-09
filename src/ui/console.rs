@@ -7,10 +7,13 @@ use crate::{
 use amethyst::{
     core::math::Point3,
     renderer::palette::Srgba,
-    tiles::{MapStorage, Region},
+    tiles::{Map, MapStorage, Region},
 };
 
 pub trait Console {
+    /// Clear the console.
+    fn clear(&mut self);
+
     /// Prints a single line of text starting at the specified point.
     fn print<P, T>(&mut self, pt: P, text: T)
     where
@@ -44,15 +47,15 @@ pub trait Console {
 
         self.fill_region(r, ' ', Srgba::new(0., 0., 0., 1.));
 
-        self.put((r.left(), r.bottom()), '┌', fg);
-        self.put((r.right(), r.bottom()), '┐', fg);
-        self.put((r.left(), r.top()), '└', fg);
-        self.put((r.right(), r.top()), '┘', fg);
-
         self.fill_region((r.left() + 1, r.top(), r.width() - 2, 1), '─', fg);
         self.fill_region((r.left() + 1, r.bottom(), r.width() - 2, 1), '─', fg);
         self.fill_region((r.left(), r.bottom() + 1, 1, r.height() - 2), '│', fg);
         self.fill_region((r.right(), r.bottom() + 1, 1, r.height() - 2), '│', fg);
+
+        self.put((r.left(), r.bottom()), '┌', fg);
+        self.put((r.right(), r.bottom()), '┐', fg);
+        self.put((r.left(), r.top()), '└', fg);
+        self.put((r.right(), r.top()), '┘', fg);
     }
 
     /// Fills a rectangle-defined region with a colored glyph.
@@ -63,6 +66,18 @@ pub trait Console {
 }
 
 impl Console for ConsoleTileMap {
+    fn clear(&mut self) {
+        let dims = *self.dimensions();
+
+        for y in 0..dims[1] {
+            for x in 0..dims[0] {
+                if let Some(tile) = self.get_mut(&Point3::new(x, y, 1)) {
+                    tile.glyph = None;
+                }
+            }
+        }
+    }
+
     fn print<P, T>(&mut self, pt: P, text: T)
     where
         P: Into<Point>,

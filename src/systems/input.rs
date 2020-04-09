@@ -74,7 +74,7 @@ type RunStateSystemData<'s> = (
 );
 
 impl RunStateInputDispatcher {
-    pub fn handle(&mut self, world: &mut World, action: ActionBinding) -> GameTrans {
+    pub fn handle(&mut self, world: &mut World, con: Entity, action: ActionBinding) -> GameTrans {
         let (entities, players, positions, pickables, mut actors, mut movers, mut pickers, mut log) =
             world.system_data::<RunStateSystemData>();
 
@@ -98,11 +98,13 @@ impl RunStateInputDispatcher {
                 ActionBinding::OpenInventory => {
                     return Trans::Push(Box::new(GameStateWrapper::new(InventoryState::new(
                         Intent::UseItem,
+                        con,
                     ))));
                 }
                 ActionBinding::DropItem => {
                     return Trans::Push(Box::new(GameStateWrapper::new(InventoryState::new(
                         Intent::DropItem,
+                        con,
                     ))));
                 }
                 _ => (),

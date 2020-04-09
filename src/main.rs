@@ -20,7 +20,6 @@ use amethyst::{
         RenderingBundle,
     },
     tiles::{MortonEncoder, RenderTiles2D},
-    ui::{RenderUi, UiBundle},
     utils::{application_root_dir, fps_counter::FpsCounterBundle},
 };
 use states::{GameStateEvent, GameStateEventReader, GameStateWrapper};
@@ -43,14 +42,12 @@ fn main() -> amethyst::Result<()> {
         )?
         .with_bundle(TransformBundle::new())?
         .with_bundle(FpsCounterBundle::default())?
-        .with_bundle(UiBundle::<GameBindings>::new())?
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(
                     RenderToWindow::from_config_path(display_config_path)?
                         .with_clear([0.0, 0.0, 0.0, 0.0]),
                 )
-                .with_plugin(RenderUi::default())
                 .with_plugin(RenderFlat2D::default())
                 .with_plugin(RenderTiles2D::<ConsoleTile, MortonEncoder>::default()),
         )?;

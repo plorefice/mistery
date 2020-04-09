@@ -106,7 +106,7 @@ impl<'a, 'b> GameState for RunState<'a, 'b> {
         match &event {
             StateEvent::Window(event) if is_close_requested(&event) => Trans::Quit,
             StateEvent::Input(InputEvent::ActionPressed(action)) => {
-                self.input.handle(world, *action)
+                self.input.handle(world, self.console.unwrap(), *action)
             }
             _ => Trans::None,
         }

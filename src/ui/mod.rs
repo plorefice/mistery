@@ -1,6 +1,6 @@
 mod console;
 
-use console::Console;
+pub use console::Console;
 
 use crate::{
     components::{CombatStats, Player},
