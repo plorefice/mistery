@@ -62,26 +62,26 @@ impl<'s> System<'s> for VisibilitySystem {
             if vs.dirty {
                 vs.visible = ShadowcastFoV::run(&*map, pos[0], pos[1], vs.range);
                 vs.dirty = false;
+            }
 
-                // If the entity is also a player, perform some additional actions
-                if players.contains(e1) {
-                    // First, reveal the visible tiles on the map
-                    map.clear_visibility();
-                    for pt in &vs.visible {
-                        map[pt].revealed = true;
-                        map[pt].visible = true;
-                    }
+            // If the entity is also a player, perform some additional actions
+            if players.contains(e1) {
+                // First, reveal the visible tiles on the map
+                map.clear_visibility();
+                for pt in &vs.visible {
+                    map[pt].revealed = true;
+                    map[pt].visible = true;
+                }
 
-                    // For renderable entities, hide those that are not in view
-                    // and show those that are visible
-                    for (e2, &Position(other), _, _) in
-                        (&entities, &positions, !&players, &renders).join()
-                    {
-                        if vs.visible.contains(&other) {
-                            hiddens.remove(e2);
-                        } else {
-                            hiddens.insert(e2, Hidden).unwrap();
-                        }
+                // For renderable entities, hide those that are not in view
+                // and show those that are visible
+                for (e2, &Position(other), _, _) in
+                    (&entities, &positions, !&players, &renders).join()
+                {
+                    if vs.visible.contains(&other) {
+                        hiddens.remove(e2);
+                    } else {
+                        hiddens.insert(e2, Hidden).unwrap();
                     }
                 }
             }
