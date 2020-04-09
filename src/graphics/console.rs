@@ -1,6 +1,6 @@
 use crate::{
+    graphics::renderer::ConsoleTileMap,
     math::{Point, Rect},
-    renderer::ConsoleTileMap,
     utils,
 };
 

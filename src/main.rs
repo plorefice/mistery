@@ -1,14 +1,13 @@
 mod components;
 mod core;
+mod graphics;
 mod math;
-mod renderer;
 mod resources;
 mod states;
 mod systems;
-mod ui;
 mod utils;
 
-use crate::{renderer::*, states::RunState, systems::*};
+use crate::{graphics::renderer::ConsoleTile, states::RunState, systems::*};
 
 use amethyst::{
     core::transform::TransformBundle,

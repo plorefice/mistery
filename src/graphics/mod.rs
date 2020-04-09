@@ -1,10 +1,9 @@
-mod console;
-
-pub use console::Console;
+pub mod console;
+pub mod renderer;
 
 use crate::{
     components::{CombatStats, Player},
-    renderer::ConsoleTileMap,
+    graphics::{console::Console, renderer::ConsoleTileMap},
     resources::CombatLog,
 };
 

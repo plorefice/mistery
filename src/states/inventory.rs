@@ -1,9 +1,8 @@
 use crate::{
     components::*,
-    renderer::ConsoleTileMap,
+    graphics::{console::Console, renderer::ConsoleTileMap},
     states::{GameState, GameStateEvent, GameTrans},
     systems::ActionBinding,
-    ui::Console,
 };
 
 use amethyst::{

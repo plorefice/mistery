@@ -4,12 +4,14 @@
 use crate::{
     components::*,
     core::{map::WorldMap, spawn},
+    graphics::{
+        renderer::{self, ConsoleTileMap},
+        Ui,
+    },
     math::{Point, Rect},
-    renderer::{self, ConsoleTileMap},
     resources::{CombatLog, TileDimension},
     states::{GameState, GameStateEvent, GameTrans},
     systems::*,
-    ui::Ui,
 };
 
 use amethyst::{
