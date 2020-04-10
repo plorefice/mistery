@@ -136,7 +136,7 @@ fn create_console(world: &mut World, pivot: Entity, sheet: Handle<SpriteSheet>) 
     let tile_dim = world.read_resource::<TileDimension>().0;
 
     let tilemap = ConsoleTileMap::new(
-        Vector3::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, 2),
+        Vector3::new(CONSOLE_WIDTH, CONSOLE_HEIGHT, 1),
         Vector3::new(tile_dim, tile_dim, 1),
         Some(sheet),
     );

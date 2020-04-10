@@ -71,7 +71,7 @@ impl Console for ConsoleTileMap {
 
         for y in 0..dims[1] {
             for x in 0..dims[0] {
-                if let Some(tile) = self.get_mut(&Point3::new(x, y, 1)) {
+                if let Some(tile) = self.get_mut(&Point3::new(x, y, 0)) {
                     tile.glyph = None;
                 }
             }
@@ -97,8 +97,8 @@ impl Console for ConsoleTileMap {
         let n = text.len() as u32;
 
         Region::new(
-            Point3::new(pt.x(), pt.y(), 1),
-            Point3::new(pt.x() + n - 1, pt.y(), 1),
+            Point3::new(pt.x(), pt.y(), 0),
+            Point3::new(pt.x() + n - 1, pt.y(), 0),
         )
         .iter()
         .zip(text.chars())
@@ -139,8 +139,8 @@ impl Console for ConsoleTileMap {
         let rect = rect.into();
 
         for pt in &Region::new(
-            Point3::new(rect.left(), rect.bottom(), 1),
-            Point3::new(rect.right(), rect.top(), 1),
+            Point3::new(rect.left(), rect.bottom(), 0),
+            Point3::new(rect.right(), rect.top(), 0),
         ) {
             if let Some(tile) = self.get_mut(&pt) {
                 tile.glyph = Some(utils::to_glyph(glyph));
@@ -152,7 +152,7 @@ impl Console for ConsoleTileMap {
     fn put<P: Into<Point>>(&mut self, pt: P, glyph: char, fg: Srgba) {
         let pt = pt.into();
 
-        if let Some(tile) = self.get_mut(&Point3::new(pt.x(), pt.y(), 1)) {
+        if let Some(tile) = self.get_mut(&Point3::new(pt.x(), pt.y(), 0)) {
             tile.glyph = Some(utils::to_glyph(glyph));
             tile.tint = fg;
         }
